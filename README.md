@@ -12,8 +12,10 @@
 │   │   └── Dockerfile_user_rpc_dev
 │   ├── mk
 │   │   └── user-rpc.mk
-│   └── script
-├── docker-compose.yml
+│   └── script          执行脚本
+│       ├── release-test.sh     总执行脚本，部署各api、rpc服务
+│       └── user-rpc-test.sh
+├── docker-compose.yaml
 ├── go.mod
 ├── go.sum
 ├── Makefile    项目编译脚本
@@ -34,3 +36,12 @@
 3. 再修改构建的镜像标签
 4. 然后推送到阿里云
 5. 在部署的时候拉取下来构建容器运行即可
+
+### 部署环境
+docker-compose up -d
+
+### 构建服务镜像
+make release-test
+
+### 运行
+make install-server

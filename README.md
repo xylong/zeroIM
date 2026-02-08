@@ -45,3 +45,9 @@ make release-test
 
 ### 运行
 make install-server
+
+### 本地运行服务
+go run apps/user/rpc/user.go -f apps/user/rpc/etc/local/user.yaml
+
+### 模型生成器
+go run deploy/script/gogen.go

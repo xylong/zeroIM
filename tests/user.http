@@ -1,0 +1,22 @@
+POST http://192.168.6.40:8011/merge
+Content-Type: application/json
+channelId: 1
+Os: android
+Lang: en
+Merchant: 1
+
+[
+  {
+    "path": "/basic/splash/screen",
+    "body": {
+      "app_type": "android",
+      "channel": "1"
+    }
+  },
+  {
+    "path": "/basic/config/param/list",
+    "body": {}
+  }
+]
+
+###

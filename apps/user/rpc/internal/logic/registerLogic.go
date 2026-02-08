@@ -11,6 +11,7 @@ import (
 	"zeroIM/apps/user/rpc/user"
 	"zeroIM/pkg/ctxdata"
 	"zeroIM/pkg/encrypt"
+	"zeroIM/pkg/logutil"
 	"zeroIM/pkg/wuid"
 
 	"github.com/zeromicro/go-zero/core/logx"
@@ -79,6 +80,7 @@ func (l *RegisterLogic) Register(in *user.RegisterReq) (*user.RegisterResp, erro
 	if len(in.Password) > 0 {
 		genPassword, err := encrypt.GenPasswordHash([]byte(in.Password))
 		if err != nil {
+			logutil.BizError(l.ctx, "register.gen_password", err, map[string]interface{}{"phone": in.Phone})
 			return nil, err
 		}
 		pwd := string(genPassword)
@@ -86,6 +88,7 @@ func (l *RegisterLogic) Register(in *user.RegisterReq) (*user.RegisterResp, erro
 	}
 
 	if err = userModel.WithContext(l.ctx).Create(userEntity); err != nil {
+		logutil.BizError(l.ctx, "register.create_user", err, map[string]interface{}{"phone": in.Phone})
 		return nil, err
 	}
 
@@ -93,6 +96,7 @@ func (l *RegisterLogic) Register(in *user.RegisterReq) (*user.RegisterResp, erro
 	now := time.Now().Unix()
 	token, err := ctxdata.GetJwtToken(l.svcCtx.Config.Jwt.AccessSecret, now, l.svcCtx.Config.Jwt.AccessExpire, userEntity.ID)
 	if err != nil {
+		logutil.BizError(l.ctx, "register.gen_token", err, map[string]interface{}{"uid": userEntity.ID})
 		return nil, err
 	}
 	return &user.RegisterResp{

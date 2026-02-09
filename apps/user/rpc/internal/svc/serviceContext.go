@@ -3,6 +3,7 @@ package svc
 import (
 	"github.com/redis/go-redis/v9"
 	"github.com/zeromicro/go-zero/core/service"
+	"github.com/zeromicro/go-zero/core/syncx"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
@@ -18,6 +19,8 @@ type ServiceContext struct {
 	DB     *gorm.DB
 	Dao    *dao.Query
 	Rdb    *redis.Client
+
+	UserInfoSF syncx.SingleFlight // 全局共享
 }
 
 func NewServiceContext(c config.Config) *ServiceContext {
@@ -52,9 +55,10 @@ func NewServiceContext(c config.Config) *ServiceContext {
 	}
 
 	return &ServiceContext{
-		Config: c,
-		DB:     db,
-		Dao:    dao.Use(db),
-		Rdb:    rdb,
+		Config:     c,
+		DB:         db,
+		Dao:        dao.Use(db),
+		Rdb:        rdb,
+		UserInfoSF: syncx.NewSingleFlight(),
 	}
 }

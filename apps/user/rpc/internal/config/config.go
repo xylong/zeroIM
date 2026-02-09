@@ -12,13 +12,13 @@ type Config struct {
 	}
 
 	Cache []struct {
-		Host string `yaml:"Host"`
-		Type string `yaml:"Type"`
-		Pass string `yaml:"Pass"`
-	} `yaml:"Cache"`
+		Host string
+		Type string
+		Pass string
+	}
 
 	Jwt struct {
-		AccessSecret string `yaml:"AccessSecret"`
-		AccessExpire int64  `yaml:"AccessExpire"`
-	} `yaml:"Jwt"`
+		AccessSecret string
+		AccessExpire int64
+	}
 }

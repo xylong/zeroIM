@@ -15,6 +15,14 @@ type User struct {
 	UpdatedAt *time.Time `gorm:"column:updated_at;autoUpdateTime" json:"updated_at"`
 }
 
-func (User) TableName() string {
+func (u *User) TableName() string {
 	return "users"
+}
+
+func (u *User) GetPassword() string {
+	if u.Password == nil {
+		return ""
+	}
+
+	return *u.Password
 }

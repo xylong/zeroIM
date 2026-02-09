@@ -11,8 +11,14 @@ type Config struct {
 		DSN string
 	}
 
+	Cache []struct {
+		Host string `yaml:"Host"`
+		Type string `yaml:"Type"`
+		Pass string `yaml:"Pass"`
+	} `yaml:"Cache"`
+
 	Jwt struct {
-		AccessSecret string
-		AccessExpire int64
-	}
+		AccessSecret string `yaml:"AccessSecret"`
+		AccessExpire int64  `yaml:"AccessExpire"`
+	} `yaml:"Jwt"`
 }

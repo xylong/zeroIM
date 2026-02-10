@@ -2,7 +2,7 @@ package ctxdata
 
 import "github.com/golang-jwt/jwt"
 
-const Identify = "zeroIM"
+const Identify = "zeroIMChat"
 
 // GetJwtToken 获取jwt token
 func GetJwtToken(secretKey string, iat, seconds int64, uid string) (string, error) {

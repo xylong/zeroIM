@@ -14,5 +14,5 @@ Cache:
     Pass: "123456"
 
 Jwt:
-  AccessSecret: zeroIM
+  AccessSecret: zeroIMChat
   AccessExpire: 8640000

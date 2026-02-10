@@ -2,6 +2,7 @@ package user
 
 import (
 	"context"
+	"zeroIM/apps/user/api/internal/dto"
 	"zeroIM/apps/user/rpc/user"
 	"zeroIM/pkg/ctxdata"
 
@@ -34,13 +35,5 @@ func (l *DetailLogic) Detail(req *types.UserInfoReq) (*types.UserInfoResp, error
 		return nil, err
 	}
 
-	return &types.UserInfoResp{
-		Info: types.User{
-			Id:       userInfo.User.Id,
-			Mobile:   userInfo.User.Phone,
-			Nickname: userInfo.GetUser().Nickname,
-			Sex:      byte(userInfo.User.Sex),
-			Avatar:   userInfo.User.Avatar,
-		},
-	}, nil
+	return dto.UserInfoToResp(userInfo), nil
 }

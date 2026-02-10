@@ -7,11 +7,6 @@ Content-Type: application/json
   "password": "123456"
 }
 
-> {%
-    // 响应处理脚本（适用于 JetBrains HTTP Client）
-    client.global.set("auth_token", response.body.data.token);
-%}
-
 ### 注册
 POST http://127.0.0.1:8888/v1/user/register
 Content-Type: application/json

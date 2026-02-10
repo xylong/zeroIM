@@ -18,8 +18,9 @@
 ├── docker-compose.yaml
 ├── go.mod
 ├── go.sum
-├── Makefile    项目编译脚本
+├── Makefile    项目编译脚本(构建/推拉镜像、运行镜像)
 ├── pkg     项目的公共工具目录
+├── tests   集成测试
 └── README.md
 ```
 

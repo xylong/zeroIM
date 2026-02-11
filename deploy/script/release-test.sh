@@ -9,6 +9,7 @@ need_start_server_shell=(
   for i in ${need_start_server_shell[*]} ; do
       chmod +x $i
       ./$i
+      sleep 2
   done
 
   docker ps

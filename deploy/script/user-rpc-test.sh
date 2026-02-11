@@ -3,7 +3,7 @@ reso_addr='registry.cn-hangzhou.aliyuncs.com/0rz/im-user-rpc-dev'
 tag='latest'
 
 container_name="user-rpc-test"
-pod_ip="192.168.2.26"
+pod_ip="user-rpc-test"
 
 # 停止容器
 docker stop ${container_name}

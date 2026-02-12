@@ -2,6 +2,11 @@ package logic
 
 import (
 	"context"
+	"errors"
+	errors2 "github.com/pkg/errors"
+	"gorm.io/gorm"
+	"zeroIM/apps/social/models"
+	"zeroIM/pkg/xerr"
 
 	"zeroIM/apps/social/rpc/internal/svc"
 	"zeroIM/apps/social/rpc/social"
@@ -24,7 +29,34 @@ func NewFriendPutInListLogic(ctx context.Context, svcCtx *svc.ServiceContext) *F
 }
 
 func (l *FriendPutInListLogic) FriendPutInList(in *social.FriendPutInListReq) (*social.FriendPutInListResp, error) {
-	// todo: add your logic here and delete this line
+	reqs, err := l.svcCtx.Dao.FriendRequest.WithContext(l.ctx).
+		Where(l.svcCtx.Dao.FriendRequest.UserId.Eq(in.UserId)).
+		Find()
+	if err != nil && errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, errors2.Wrapf(xerr.NewDBErr(), "list friend err %v req %v", err, in.UserId)
+	}
 
-	return &social.FriendPutInListResp{}, nil
+	return &social.FriendPutInListResp{
+		List: l.toList(reqs),
+	}, nil
+}
+
+func (l *FriendPutInListLogic) toList(reqs []*models.FriendRequest) []*social.FriendRequests {
+	if len(reqs) == 0 {
+		return nil
+	}
+
+	var list []*social.FriendRequests
+	for _, req := range reqs {
+		list = append(list, &social.FriendRequests{
+			Id:           int32(req.Id),
+			UserId:       req.UserId,
+			ReqUid:       req.ReqUid,
+			ReqMsg:       req.ReqMsg,
+			ReqTime:      req.ReqTime.Unix(),
+			HandleResult: int32(req.HandleResult),
+		})
+	}
+
+	return list
 }

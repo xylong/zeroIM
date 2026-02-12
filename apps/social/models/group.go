@@ -25,3 +25,7 @@ type Group struct {
 func (*Group) TableName() string {
 	return "groups"
 }
+
+func (g *Group) GetVerify() bool {
+	return g.IsVerify > 0
+}

@@ -1,14 +1,28 @@
 package constants
 
+// HandlerResult 处理结果：1未处理 2通过 3拒绝 4取消
 type HandlerResult int
 
 const (
-	// NoHandlerResult 未处理
 	NoHandlerResult HandlerResult = iota + 1
-	// PassHandlerResult 处理通过
 	PassHandlerResult
-	// RejectHandlerResult 处理拒绝
 	RejectHandlerResult
-	// CancelHandlerResult 处理取消
 	CancelHandlerResult
+)
+
+// GroupRoleLevel 群等级 1. 创建者，2. 管理者，3. 普通
+type GroupRoleLevel int
+
+const (
+	CreatorGroupRoleLevel GroupRoleLevel = iota + 1 // 为什么会 从1开始？
+	ManagerGroupRoleLevel
+	AtLargeGroupRoleLevel
+)
+
+// GroupJoinSource 进群申请的方式： 1. 邀请， 2. 申请
+type GroupJoinSource int
+
+const (
+	InviteGroupJoinSource GroupJoinSource = iota + 1
+	PutInGroupJoinSource
 )

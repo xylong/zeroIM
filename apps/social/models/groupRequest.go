@@ -11,7 +11,7 @@ type GroupRequest struct {
 	ReqID         string         `gorm:"column:req_id;type:varchar(64);not null;comment:请求id" json:"req_id"`                    // 请求id
 	GroupID       string         `gorm:"column:group_id;type:varchar(64);not null;comment:群id" json:"group_id"`                 // 群id
 	ReqMsg        string         `gorm:"column:req_msg;type:varchar(255);not null;comment:请求信息" json:"req_msg"`                 // 请求信息
-	ReqTime       *time.Time     `gorm:"column:req_time;type:timestamp;not null;comment:请求时间" json:"req_time"`                  // 请求时间
+	ReqTime       time.Time      `gorm:"column:req_time;type:timestamp;not null;comment:请求时间" json:"req_time"`                  // 请求时间
 	JoinSource    int64          `gorm:"column:join_source;type:tinyint(4);not null;comment:入群方式" json:"join_source"`           // 入群方式
 	InviterUserID string         `gorm:"column:inviter_user_id;type:varchar(64);not null;comment:邀请人id" json:"inviter_user_id"` // 邀请人id
 	HandleUserID  string         `gorm:"column:handle_user_id;type:varchar(64);not null;comment:处理人id" json:"handle_user_id"`   // 处理人id

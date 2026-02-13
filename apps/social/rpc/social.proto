@@ -105,7 +105,9 @@ message GroupPutinReq {
   int32  joinSource = 6;
   string inviterUid = 7;
 }
-message GroupPutinResp {}
+message GroupPutinResp {
+  string groupId = 1;
+}
 
 message GroupPutinListReq {
   string groupId = 1;

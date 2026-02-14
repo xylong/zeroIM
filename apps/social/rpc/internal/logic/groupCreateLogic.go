@@ -35,7 +35,7 @@ func NewGroupCreateLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Group
 	}
 }
 
-// 群要求
+// GroupCreate 建群
 func (l *GroupCreateLogic) GroupCreate(in *social.GroupCreateReq) (*social.GroupCreateResp, error) {
 	// 1.判断群是否存在
 	group, err := l.svcCtx.Dao.Group.WithContext(l.ctx).

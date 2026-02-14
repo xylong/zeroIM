@@ -46,7 +46,7 @@ func (l *GroupListLogic) GroupList(in *social.GroupListReq) (*social.GroupListRe
 			Status:          int32(group.Status),
 			CreatorUid:      group.CreatorUID,
 			GroupType:       int32(group.GroupType),
-			IsVerify:        group.GetVerify(),
+			IsVerify:        group.IsVerify > 0,
 			Notification:    group.Notification,
 			NotificationUid: group.NotificationUID,
 		})

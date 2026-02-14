@@ -79,15 +79,14 @@ func (l *GroupPutinLogic) GroupPutin(in *social.GroupPutinReq) (*social.GroupPut
 		ReqID:         in.ReqId,
 		GroupID:       in.GroupId,
 		ReqMsg:        in.ReqMsg,
-		ReqTime:       time.Now(),
-		JoinSource:    int64(in.JoinSource),
+		JoinSource:    int8(in.JoinSource),
 		InviterUserID: in.InviterUid,
-		HandleResult:  int64(constants.NoHandlerResult),
+		HandleResult:  int8(constants.NoHandlerResult),
 	}
 
 	// 6. 判断是否可以自动通过
 	isPass := false
-	if group.GetVerify() {
+	if group.IsVerify > 0 {
 		// 群开启了免验证进群
 		isPass = true
 	} else if constants.GroupJoinSource(in.JoinSource) == constants.InviteGroupJoinSource {
@@ -107,7 +106,7 @@ func (l *GroupPutinLogic) GroupPutin(in *social.GroupPutinReq) (*social.GroupPut
 
 	// 7. 执行入群逻辑（事务）
 	if isPass {
-		groupReq.HandleResult = int64(constants.PassHandlerResult)
+		groupReq.HandleResult = int8(constants.PassHandlerResult)
 		groupReq.HandleTime = func(t time.Time) *time.Time { return &t }(time.Now())
 
 		err = l.svcCtx.Dao.Transaction(func(tx *dao.Query) error {
@@ -119,9 +118,8 @@ func (l *GroupPutinLogic) GroupPutin(in *social.GroupPutinReq) (*social.GroupPut
 				UserID:      in.ReqId,
 				OperatorUID: in.InviterUid,
 				InviterUID:  in.InviterUid,
-				RoleLevel:   int64(constants.AtLargeGroupRoleLevel),
-				JoinTime:    time.Now(),
-				JoinSource:  int64(in.JoinSource),
+				RoleLevel:   int8(constants.AtLargeGroupRoleLevel),
+				JoinSource:  int8(in.JoinSource),
 			})
 		})
 		if err != nil {

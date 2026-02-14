@@ -74,8 +74,8 @@ func (l *RegisterLogic) Register(in *user.RegisterReq) (*user.RegisterResp, erro
 		Avatar:   avatar,
 		Nickname: nickname,
 		Phone:    in.Phone,
-		Status:   &status,
-		Sex:      &sex,
+		Status:   status,
+		Sex:      sex,
 	}
 	if len(in.Password) > 0 {
 		genPassword, err := encrypt.GenPasswordHash([]byte(in.Password))
@@ -83,8 +83,7 @@ func (l *RegisterLogic) Register(in *user.RegisterReq) (*user.RegisterResp, erro
 			logutil.BizError(l.ctx, "register.gen_password", err, map[string]interface{}{"phone": in.Phone})
 			return nil, err
 		}
-		pwd := string(genPassword)
-		userEntity.Password = &pwd
+		userEntity.Password = string(genPassword)
 	}
 
 	if err = userModel.WithContext(l.ctx).Create(userEntity); err != nil {

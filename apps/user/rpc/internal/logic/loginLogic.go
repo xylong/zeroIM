@@ -60,12 +60,11 @@ func (l *LoginLogic) Login(in *user.LoginReq) (*user.LoginResp, error) {
 	}
 
 	// 2.密码校验
-	pwd := userEntity.GetPassword()
-	if !encrypt.ValidatePasswordHash(in.Password, pwd) {
+	if !encrypt.ValidatePasswordHash(in.Password, userEntity.Password) {
 		logutil.BizError(l.ctx, "login.user_password_error", err, map[string]interface{}{
 			"id":       userEntity.ID,
 			"phone":    in.Phone,
-			"password": pwd,
+			"password": userEntity.Password,
 		})
 		return nil, errors2.WithStack(ErrUserPwdError)
 	}

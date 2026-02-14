@@ -10,8 +10,8 @@ CREATE TABLE `users` (
                          `updated_at` timestamp NOT NULL COMMENT '更新时间',
                          `deleted_at` timestamp NULL DEFAULT NULL COMMENT '删除时间',
                          PRIMARY KEY (`id`),
-                         UNIQUE KEY `uni_phone_creeated_at` (`phone`,`created_at`) USING BTREE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+                         UNIQUE KEY `uk_phone` (`phone`) USING BTREE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户表';
 
 CREATE TABLE `wuid` (
                         `h` int(10) NOT NULL AUTO_INCREMENT,

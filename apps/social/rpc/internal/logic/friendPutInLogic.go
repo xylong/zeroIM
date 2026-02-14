@@ -5,7 +5,6 @@ import (
 	"errors"
 	errors2 "github.com/pkg/errors"
 	"gorm.io/gorm"
-	"time"
 	"zeroIM/apps/social/models"
 	"zeroIM/pkg/xerr"
 
@@ -49,10 +48,9 @@ func (l *FriendPutInLogic) FriendPutIn(in *social.FriendPutInReq) (*social.Frien
 	}
 	// 3.入库
 	err = l.svcCtx.Dao.FriendRequest.WithContext(l.ctx).Create(&models.FriendRequest{
-		UserId:  in.UserId,
-		ReqUid:  in.ReqUid,
-		ReqMsg:  in.ReqMsg,
-		ReqTime: time.Now(),
+		UserID: in.UserId,
+		ReqUID: in.ReqUid,
+		ReqMsg: in.ReqMsg,
 	})
 	if err != nil {
 		return nil, errors2.Wrapf(xerr.NewDBErr(), "create friendRequest err %v req %v", err, in)

@@ -63,11 +63,12 @@ func (l *GroupCreateLogic) GroupCreate(in *social.GroupCreateReq) (*social.Group
 			return errors2.Wrapf(xerr.NewDBErr(), "create group err %v req %v", err, in)
 		}
 
+		now := time.Now()
 		var groupMember = models.GroupMember{
 			GroupID:    group.ID,
 			UserID:     in.CreatorUid,
 			RoleLevel:  1,
-			JoinTime:   time.Now(),
+			JoinTime:   &now,
 			JoinSource: 1,
 		}
 		if err := tx.GroupMember.WithContext(l.ctx).Create(&groupMember); err != nil {

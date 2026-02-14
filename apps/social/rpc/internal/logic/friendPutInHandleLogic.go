@@ -63,11 +63,11 @@ func (l *FriendPutInHandleLogic) FriendPutInHandle(in *social.FriendPutInHandleR
 
 		friends := []*models.Friend{
 			{
-				UserId:    friendReq.UserId,
-				FriendUid: friendReq.ReqUid,
+				UserID:    friendReq.UserID,
+				FriendUID: friendReq.ReqUID,
 			}, {
-				UserId:    friendReq.ReqUid,
-				FriendUid: friendReq.UserId,
+				UserID:    friendReq.ReqUID,
+				FriendUID: friendReq.UserID,
 			},
 		}
 		if err := tx.Friend.WithContext(l.ctx).CreateInBatches(friends, 2); err != nil {

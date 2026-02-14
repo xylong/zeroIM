@@ -49,11 +49,11 @@ func (l *FriendPutInListLogic) toList(reqs []*models.FriendRequest) []*social.Fr
 	var list []*social.FriendRequests
 	for _, req := range reqs {
 		list = append(list, &social.FriendRequests{
-			Id:           int32(req.Id),
-			UserId:       req.UserId,
-			ReqUid:       req.ReqUid,
+			Id:           int32(req.ID),
+			UserId:       req.UserID,
+			ReqUid:       req.ReqUID,
 			ReqMsg:       req.ReqMsg,
-			ReqTime:      req.ReqTime.Unix(),
+			ReqTime:      req.CreatedAt.Unix(),
 			HandleResult: int32(req.HandleResult),
 		})
 	}

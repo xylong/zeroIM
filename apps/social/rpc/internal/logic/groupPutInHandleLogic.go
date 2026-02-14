@@ -58,7 +58,7 @@ func (l *GroupPutInHandleLogic) GroupPutInHandle(in *social.GroupPutInHandleReq)
 	case constants.RejectHandlerResult:
 		return nil, errors2.WithStack(ErrGroupReqBeforeRefuse)
 	}
-	req.HandleResult = int64(in.HandleResult)
+	req.HandleResult = int8(in.HandleResult)
 
 	err = l.svcCtx.Dao.Transaction(func(tx *dao.Query) error {
 		now := time.Now()
@@ -66,7 +66,7 @@ func (l *GroupPutInHandleLogic) GroupPutInHandle(in *social.GroupPutInHandleReq)
 			Where(tx.GroupRequest.ID.Eq(int64(in.GroupReqId))).Updates(&models.GroupRequest{
 			HandleUserID: in.HandleUid,
 			HandleTime:   &now,
-			HandleResult: int64(in.HandleResult),
+			HandleResult: int8(in.HandleResult),
 		}); err != nil {
 			return errors2.Wrapf(xerr.NewDBErr(), "update group req err %v groupReqId=%v", err, in.GroupReqId)
 		}
@@ -78,7 +78,7 @@ func (l *GroupPutInHandleLogic) GroupPutInHandle(in *social.GroupPutInHandleReq)
 		if err := tx.GroupMember.WithContext(l.ctx).Create(&models.GroupMember{
 			GroupID:     req.GroupID,
 			UserID:      req.ReqID,
-			RoleLevel:   int64(constants.AtLargeGroupRoleLevel),
+			RoleLevel:   int8(constants.AtLargeGroupRoleLevel),
 			OperatorUID: in.HandleUid,
 		}); err != nil {
 			return errors2.Wrapf(xerr.NewDBErr(), "create group member err %v groupReqId=%v", err, in.GroupReqId)

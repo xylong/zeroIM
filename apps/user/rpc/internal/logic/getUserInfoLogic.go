@@ -178,14 +178,7 @@ func (l *GetUserInfoLogic) toUserEntity(u *models.User) *user.UserEntity {
 		Avatar:   u.Avatar,
 		Nickname: u.Nickname,
 		Phone:    u.Phone,
-		Status:   toInt32(u.Status),
-		Sex:      toInt32(u.Sex),
+		Status:   int32(u.Status),
+		Sex:      int32(u.Sex),
 	}
-}
-
-func toInt32(v *int8) int32 {
-	if v == nil {
-		return 0
-	}
-	return int32(*v)
 }

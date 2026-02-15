@@ -3,7 +3,7 @@ package user
 import (
 	"context"
 	"zeroIM/apps/user/api/internal/dto"
-	"zeroIM/apps/user/rpc/user"
+	"zeroIM/apps/user/rpc/userClient"
 	"zeroIM/pkg/ctxdata"
 
 	"zeroIM/apps/user/api/internal/svc"
@@ -30,7 +30,7 @@ func NewDetailLogic(ctx context.Context, svcCtx *svc.ServiceContext) *DetailLogi
 func (l *DetailLogic) Detail(req *types.UserInfoReq) (*types.UserInfoResp, error) {
 	uid := ctxdata.GetUId(l.ctx)
 
-	userInfo, err := l.svcCtx.GetUserInfo(l.ctx, &user.GetUserInfoReq{Id: uid})
+	userInfo, err := l.svcCtx.GetUserInfo(l.ctx, &userClient.GetUserInfoReq{Id: uid})
 	if err != nil {
 		return nil, err
 	}

@@ -2,7 +2,7 @@ package user
 
 import (
 	"context"
-	"zeroIM/apps/user/rpc/user"
+	"zeroIM/apps/user/rpc/userClient"
 
 	"zeroIM/apps/user/api/internal/svc"
 	"zeroIM/apps/user/api/internal/types"
@@ -27,7 +27,7 @@ func NewLoginLogic(ctx context.Context, svcCtx *svc.ServiceContext) *LoginLogic 
 
 func (l *LoginLogic) Login(req *types.LoginReq) (resp *types.LoginResp, err error) {
 
-	loginResp, err := l.svcCtx.User.Login(l.ctx, &user.LoginReq{
+	loginResp, err := l.svcCtx.User.Login(l.ctx, &userClient.LoginReq{
 		Phone:    req.Phone,
 		Password: req.Password,
 	})

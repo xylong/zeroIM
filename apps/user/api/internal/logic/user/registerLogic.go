@@ -3,7 +3,7 @@ package user
 import (
 	"context"
 	"github.com/jinzhu/copier"
-	"zeroIM/apps/user/rpc/user"
+	"zeroIM/apps/user/rpc/userClient"
 
 	"zeroIM/apps/user/api/internal/svc"
 	"zeroIM/apps/user/api/internal/types"
@@ -27,7 +27,7 @@ func NewRegisterLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Register
 }
 
 func (l *RegisterLogic) Register(req *types.RegisterReq) (resp *types.RegisterResp, err error) {
-	registerResp, err := l.svcCtx.User.Register(l.ctx, &user.RegisterReq{
+	registerResp, err := l.svcCtx.User.Register(l.ctx, &userClient.RegisterReq{
 		Phone:    req.Phone,
 		Nickname: req.Nickname,
 		Password: req.Password,

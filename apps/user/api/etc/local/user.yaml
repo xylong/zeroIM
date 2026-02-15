@@ -10,4 +10,4 @@ UserRpc:
 
 JwtAuth:
   AccessSecret: zeroIMChat
-  AccessExpire: 8640000
+  AccessExpire: 86400

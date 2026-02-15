@@ -1,0 +1,9 @@
+POST http://127.0.0.1:8881/v1/social/friend/putIn
+Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3Nzk3NTg0NjksImlhdCI6MTc3MTExODQ2OSwiemVyb0lNQ2hhdCI6IjB4MDAwMDAwODAwMDAwMDAwYyJ9.cjB_6CU5BAW0NzyRboDiRUX_rLUJnxpKggLjez4GoFY
+Accept: application/json
+
+{
+  "req_msg": "通过一下",
+  "user_uid": "0x0000008000000005"
+}

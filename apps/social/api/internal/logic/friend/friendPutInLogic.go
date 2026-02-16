@@ -2,7 +2,6 @@ package friend
 
 import (
 	"context"
-	"fmt"
 	"zeroIM/apps/social/rpc/socialClient"
 	"zeroIM/pkg/ctxdata"
 	"zeroIM/pkg/xerr"
@@ -39,7 +38,7 @@ func (l *FriendPutInLogic) FriendPutIn(req *types.FriendPutInReq) (*types.Friend
 		return nil, errors2.WithStack(xerr.NewCodeErr(xerr.TokenExpireError))
 	}
 	if req.UserId == uid {
-		return nil, errors2.WithStack(xerr.NewReqParamErr())
+		return nil, errors2.WithStack(xerr.NewMsgErr("不能添加自己为好友"))
 	}
 	if len(req.ReqMsg) > 256 {
 		return nil, errors2.WithStack(xerr.NewReqParamErr())
@@ -51,7 +50,6 @@ func (l *FriendPutInLogic) FriendPutIn(req *types.FriendPutInReq) (*types.Friend
 		ReqMsg: req.ReqMsg,
 	}
 	_, err := l.svcCtx.Social.FriendPutIn(l.ctx, rpcReq)
-	fmt.Println("===", err)
 	if err != nil {
 		logx.WithContext(l.ctx).Errorf("friend put in rpc failed: uid=%s req=%+v err=%+v", uid, req, err)
 		return nil, errors2.WithStack(err)

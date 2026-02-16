@@ -35,7 +35,7 @@ func (l *FriendPutInLogic) FriendPutIn(in *social.FriendPutInReq) (*social.Frien
 		return nil, errors2.Wrapf(xerr.NewDBErr(), "find friend err %v req %v", err, in)
 	}
 	if friends != nil {
-		return &social.FriendPutInResp{}, err
+		return &social.FriendPutInResp{}, errors2.Wrap(xerr.NewMsgErr("已是好友关系"), "")
 	}
 
 	// 2.是否有进行中或拒绝的申请
@@ -44,7 +44,7 @@ func (l *FriendPutInLogic) FriendPutIn(in *social.FriendPutInReq) (*social.Frien
 		return nil, errors2.Wrapf(xerr.NewDBErr(), "find friend request err %v req %v", err, in)
 	}
 	if request != nil {
-		return &social.FriendPutInResp{}, errors2.Wrap(xerr.NewDBErr(), "request already exist")
+		return &social.FriendPutInResp{}, errors2.Wrap(xerr.NewMsgErr("request already exist"), "")
 	}
 	// 3.入库
 	err = l.svcCtx.Dao.FriendRequest.WithContext(l.ctx).Create(&models.FriendRequest{

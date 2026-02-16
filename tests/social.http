@@ -1,9 +1,21 @@
+### 好友申请
 POST http://127.0.0.1:8881/v1/social/friend/putIn
 Content-Type: application/json
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3Nzk3NTg0NjksImlhdCI6MTc3MTExODQ2OSwiemVyb0lNQ2hhdCI6IjB4MDAwMDAwODAwMDAwMDAwYyJ9.cjB_6CU5BAW0NzyRboDiRUX_rLUJnxpKggLjez4GoFY
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3Nzk4Mzk5NjEsImlhdCI6MTc3MTE5OTk2MSwiemVyb0lNQ2hhdCI6IjB4MDAwMDAwODAwMDAwMDAwYyJ9.me7ZIQwxE44jWyHM7mEIjSsgEQshnR2YoWkGml1EpF4
 Accept: application/json
 
 {
   "req_msg": "通过一下",
-  "user_uid": "0x0000008000000005"
+  "user_uid": "0x000000800000000c"
+}
+
+### 处理好友申请
+PUT http://127.0.0.1:8881/v1/social/friend/putIn
+Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3Nzk4Mzk5NjEsImlhdCI6MTc3MTE5OTk2MSwiemVyb0lNQ2hhdCI6IjB4MDAwMDAwODAwMDAwMDAwYyJ9.me7ZIQwxE44jWyHM7mEIjSsgEQshnR2YoWkGml1EpF4
+Accept: application/json
+
+{
+  "friend_req_id": 5,
+  "handle_result": 4
 }

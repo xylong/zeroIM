@@ -2,7 +2,9 @@ package logic
 
 import (
 	"context"
+	"errors"
 	errors2 "github.com/pkg/errors"
+	"gorm.io/gorm"
 	"zeroIM/apps/social/models"
 	"zeroIM/apps/social/rpc/internal/dao"
 	"zeroIM/pkg/constants"
@@ -17,6 +19,7 @@ import (
 var (
 	ErrFriendReqBeforePass   = xerr.NewMsgErr("好友申请已经通过")
 	ErrFriendReqBeforeRefuse = xerr.NewMsgErr("好友申请已经被拒绝")
+	ErrFriendReqCancelRefuse = xerr.NewMsgErr("好友申请已经被取消")
 )
 
 type FriendPutInHandleLogic struct {
@@ -35,9 +38,15 @@ func NewFriendPutInHandleLogic(ctx context.Context, svcCtx *svc.ServiceContext) 
 
 func (l *FriendPutInHandleLogic) FriendPutInHandle(in *social.FriendPutInHandleReq) (*social.FriendPutInHandleResp, error) {
 	// 1.获取申请记录
-	friendReq, err := l.svcCtx.Dao.FriendRequest.WithContext(l.ctx).Where(l.svcCtx.Dao.FriendRequest.Id.Eq(int64(in.FriendReqId))).First()
-	if err != nil {
+	friendReq, err := l.svcCtx.Dao.FriendRequest.WithContext(l.ctx).Debug().
+		Where(l.svcCtx.Dao.FriendRequest.Id.Eq(int64(in.FriendReqId))).
+		Where(l.svcCtx.Dao.FriendRequest.UserId.Eq(in.UserId)).
+		First()
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, errors2.Wrapf(xerr.NewDBErr(), "get friendRequest by friendReqid err %v req %v", err, in.FriendReqId)
+	}
+	if friendReq == nil {
+		return nil, errors2.WithStack(xerr.NewMsgErr("申请不存在"))
 	}
 
 	// 2.验证处理状态
@@ -46,6 +55,8 @@ func (l *FriendPutInHandleLogic) FriendPutInHandle(in *social.FriendPutInHandleR
 		return nil, errors2.WithStack(ErrFriendReqBeforePass)
 	case constants.RejectHandlerResult:
 		return nil, errors2.WithStack(ErrFriendReqBeforeRefuse)
+	case constants.CancelHandlerResult:
+		return nil, errors2.WithStack(ErrFriendReqCancelRefuse)
 	}
 
 	// 3.处理入库

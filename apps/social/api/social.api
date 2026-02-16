@@ -186,7 +186,7 @@ service social {
 	@handler groupList
 	get /groups (GroupListReq) returns (GroupListResp)
 
-	@doc "成员列表列表"
+	@doc "群成员列表"
 	@handler groupUserList
 	get /group/users (GroupUserListReq) returns (GroupUserListResp)
 }

@@ -2,6 +2,9 @@ package group
 
 import (
 	"context"
+	"github.com/pkg/errors"
+	"zeroIM/apps/social/api/internal/dto"
+	"zeroIM/apps/social/rpc/socialClient"
 
 	"zeroIM/apps/social/api/internal/svc"
 	"zeroIM/apps/social/api/internal/types"
@@ -15,7 +18,7 @@ type GroupPutInListLogic struct {
 	svcCtx *svc.ServiceContext
 }
 
-// 申请进群列表
+// NewGroupPutInListLogic 申请进群列表
 func NewGroupPutInListLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GroupPutInListLogic {
 	return &GroupPutInListLogic{
 		Logger: logx.WithContext(ctx),
@@ -24,8 +27,15 @@ func NewGroupPutInListLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Gr
 	}
 }
 
-func (l *GroupPutInListLogic) GroupPutInList(req *types.GroupPutInListReq) (resp *types.GroupPutInListResp, err error) {
-	// todo: add your logic here and delete this line
+func (l *GroupPutInListLogic) GroupPutInList(req *types.GroupPutInListReq) (*types.GroupPutInListResp, error) {
+	resp, err := l.svcCtx.Social.GroupPutinList(l.ctx, &socialClient.GroupPutinListReq{
+		GroupId: req.GroupId,
+	})
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
 
-	return
+	return &types.GroupPutInListResp{
+		List: dto.GroupPutInToList(resp),
+	}, nil
 }

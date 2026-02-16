@@ -15,7 +15,7 @@ type GroupUserListLogic struct {
 	svcCtx *svc.ServiceContext
 }
 
-// 成员列表列表
+// NewGroupUserListLogic 成员列表列表
 func NewGroupUserListLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GroupUserListLogic {
 	return &GroupUserListLogic{
 		Logger: logx.WithContext(ctx),
@@ -24,8 +24,6 @@ func NewGroupUserListLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Gro
 	}
 }
 
-func (l *GroupUserListLogic) GroupUserList(req *types.GroupUserListReq) (resp *types.GroupUserListResp, err error) {
-	// todo: add your logic here and delete this line
-
-	return
+func (l *GroupUserListLogic) GroupUserList(req *types.GroupUserListReq) (*types.GroupUserListResp, error) {
+	return nil, nil
 }

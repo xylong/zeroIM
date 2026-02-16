@@ -41,7 +41,7 @@ func (l *FriendPutInHandleLogic) FriendPutInHandle(req *types.FriendPutInHandleR
 		fmt.Println(222)
 		return nil, errors2.WithStack(xerr.NewReqParamErr())
 	}
-	fmt.Println("====")
+
 	uid := ctxdata.GetUId(l.ctx)
 	_, err := l.svcCtx.Social.FriendPutInHandle(l.ctx, &socialClient.FriendPutInHandleReq{
 		FriendReqId:  req.FriendReqId,

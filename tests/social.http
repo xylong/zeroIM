@@ -61,11 +61,23 @@ Accept: application/json
 ### 申请入群
 POST http://127.0.0.1:8881/v1/social/group/putIn
 Content-Type: application/json
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3Nzk4NzMzNzMsImlhdCI6MTc3MTIzMzM3MywiemVyb0lNQ2hhdCI6IjB4MDAwMDAwODAwMDAwMDAwNCJ9.CojVexV88pN6dx6h_L7dDpnn4rR81F3nBLbSukUgnMY
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3Nzk4ODQ4MTUsImlhdCI6MTc3MTI0NDgxNSwiemVyb0lNQ2hhdCI6IjB4MDAwMDAwODAwMDAwMDAwOSJ9.UqtZBWb4Sl-U4GHhVCE3OneqaJ8oS9ezo44S-5NxfEI
 Accept: application/json
 
 {
   "group_id": "0x0000009000000001",
   "join_source": 2,
-  "req_msg": "不请自来"
+  "req_msg": "随便看看"
+}
+
+### 入群申请处理
+PUT http://127.0.0.1:8881/v1/social/group/putIn
+Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3Nzk4Mzk5NjEsImlhdCI6MTc3MTE5OTk2MSwiemVyb0lNQ2hhdCI6IjB4MDAwMDAwODAwMDAwMDAwYyJ9.me7ZIQwxE44jWyHM7mEIjSsgEQshnR2YoWkGml1EpF4
+Accept: application/json
+
+{
+  "group_req_id": 2,
+  "group_id": "0x0000009000000001",
+  "handle_result": 2
 }

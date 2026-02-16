@@ -104,7 +104,7 @@ type (
 )
 
 type (
-	GroupPutInHandleRep {
+	GroupPutInHandleReq {
 		GroupReqId   int32  `json:"group_req_id,omitempty"`
 		GroupId      string `json:"group_id,omitempty"`
 		HandleResult int32  `json:"handle_result,omitempty"` // 处理结果
@@ -113,7 +113,7 @@ type (
 )
 
 type (
-	GroupPutInListRep {
+	GroupPutInListReq {
 		GroupId string `json:"group_id,omitempty"`
 	}
 	GroupPutInListResp {
@@ -122,7 +122,7 @@ type (
 )
 
 type (
-	GroupListRep  {}
+	GroupListReq  {}
 	GroupListResp {
 		List []*Groups `json:"list,omitempty"`
 	}
@@ -176,15 +176,15 @@ service social {
 
 	@doc "申请进群处理"
 	@handler groupPutInHandle
-	put /group/putIn (GroupPutInHandleRep) returns (GroupPutInHandleResp)
+	put /group/putIn (GroupPutInHandleReq) returns (GroupPutInHandleResp)
 
 	@doc "申请进群列表"
 	@handler groupPutInList
-	get /group/putIns (GroupPutInListRep) returns (GroupPutInListResp)
+	get /group/putIns (GroupPutInListReq) returns (GroupPutInListResp)
 
 	@doc "用户申群列表"
 	@handler groupList
-	get /groups (GroupListRep) returns (GroupListResp)
+	get /groups (GroupListReq) returns (GroupListResp)
 
 	@doc "成员列表列表"
 	@handler groupUserList

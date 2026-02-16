@@ -2,6 +2,12 @@ package group
 
 import (
 	"context"
+	"github.com/pkg/errors"
+	"slices"
+	"zeroIM/apps/social/rpc/socialClient"
+	"zeroIM/pkg/constants"
+	"zeroIM/pkg/ctxdata"
+	"zeroIM/pkg/xerr"
 
 	"zeroIM/apps/social/api/internal/svc"
 	"zeroIM/apps/social/api/internal/types"
@@ -15,7 +21,7 @@ type GroupPutInHandleLogic struct {
 	svcCtx *svc.ServiceContext
 }
 
-// 申请进群处理
+// NewGroupPutInHandleLogic 申请进群处理
 func NewGroupPutInHandleLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GroupPutInHandleLogic {
 	return &GroupPutInHandleLogic{
 		Logger: logx.WithContext(ctx),
@@ -24,8 +30,25 @@ func NewGroupPutInHandleLogic(ctx context.Context, svcCtx *svc.ServiceContext) *
 	}
 }
 
-func (l *GroupPutInHandleLogic) GroupPutInHandle(req *types.GroupPutInHandleRep) (resp *types.GroupPutInHandleResp, err error) {
-	// todo: add your logic here and delete this line
+func (l *GroupPutInHandleLogic) GroupPutInHandle(req *types.GroupPutInHandleReq) (*types.GroupPutInHandleResp, error) {
+	if req == nil || req.GroupReqId <= 0 || req.GroupId == "" {
+		return nil, errors.WithStack(xerr.NewReqParamErr())
+	}
+	results := []constants.HandlerResult{constants.PassHandlerResult, constants.RejectHandlerResult, constants.CancelHandlerResult}
+	if !slices.Contains(results, constants.HandlerResult(req.HandleResult)) {
+		return nil, errors.WithStack(xerr.NewReqParamErr())
+	}
 
-	return
+	uid := ctxdata.GetUId(l.ctx)
+	_, err := l.svcCtx.Social.GroupPutInHandle(l.ctx, &socialClient.GroupPutInHandleReq{
+		GroupId:      req.GroupId,
+		GroupReqId:   req.GroupReqId,
+		HandleResult: req.HandleResult,
+		HandleUid:    uid,
+	})
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+
+	return &types.GroupPutInHandleResp{}, nil
 }

@@ -38,7 +38,6 @@ func (l *FriendPutInHandleLogic) FriendPutInHandle(req *types.FriendPutInHandleR
 	}
 	results := []constants.HandlerResult{constants.PassHandlerResult, constants.RejectHandlerResult, constants.CancelHandlerResult}
 	if !slices.Contains(results, constants.HandlerResult(req.HandleResult)) {
-		fmt.Println(222)
 		return nil, errors2.WithStack(xerr.NewReqParamErr())
 	}
 

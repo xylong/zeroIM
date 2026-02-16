@@ -28,7 +28,7 @@ func NewGroupListLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GroupLi
 	}
 }
 
-func (l *GroupListLogic) GroupList(req *types.GroupListRep) (*types.GroupListResp, error) {
+func (l *GroupListLogic) GroupList(req *types.GroupListReq) (*types.GroupListResp, error) {
 	uid := ctxdata.GetUId(l.ctx)
 	resp, err := l.svcCtx.Social.GroupList(l.ctx, &socialClient.GroupListReq{
 		UserId: uid,

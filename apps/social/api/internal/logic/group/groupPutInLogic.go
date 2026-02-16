@@ -2,7 +2,6 @@ package group
 
 import (
 	"context"
-	"fmt"
 	"github.com/pkg/errors"
 	"zeroIM/apps/social/api/internal/svc"
 	"zeroIM/apps/social/api/internal/types"
@@ -36,7 +35,6 @@ func (l *GroupPutInLogic) GroupPutIn(req *types.GroupPutInReq) (*types.GroupPutI
 		ReqMsg:     req.ReqMsg,
 	})
 	if err != nil {
-		fmt.Println("RPC ERROR:", err)
 		return nil, errors.WithStack(err)
 	}
 

@@ -38,18 +38,31 @@ func NewGroupPutInHandleLogic(ctx context.Context, svcCtx *svc.ServiceContext) *
 }
 
 func (l *GroupPutInHandleLogic) GroupPutInHandle(in *social.GroupPutInHandleReq) (*social.GroupPutInHandleResp, error) {
+	// 入群申请
 	req, err := l.svcCtx.Dao.GroupRequest.WithContext(l.ctx).
 		Where(l.svcCtx.Dao.GroupRequest.ID.Eq(int64(in.GroupReqId))).
 		First()
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, errors2.Wrapf(xerr.NewDBErr(), "group request not found %v", in.GroupReqId)
+			return nil, errors2.Wrap(xerr.NewMsgErr("group request not found"), "")
 		}
 		return nil, errors2.Wrapf(xerr.NewDBErr(), "find group req err %v groupReqId=%v", err, in.GroupReqId)
 	}
 
+	// 申请审核人校验
 	if in.GroupId != "" && req.GroupID != in.GroupId {
 		return nil, errors2.Wrapf(xerr.NewReqParamErr(), "mismatch groupId %s != %s", in.GroupId, req.GroupID)
+	}
+	_, err = l.svcCtx.Dao.GroupMember.WithContext(l.ctx).
+		Where(l.svcCtx.Dao.GroupMember.GroupID.Eq(in.GroupId)).
+		Where(l.svcCtx.Dao.GroupMember.UserID.Eq(in.HandleUid)).
+		Where(l.svcCtx.Dao.GroupMember.RoleLevel.In(int64(constants.CreatorGroupRoleLevel), int64(constants.ManagerGroupRoleLevel))).
+		First()
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errors2.Wrapf(xerr.NewMsgErr("no permission"), "")
+		}
+		return nil, errors2.Wrapf(xerr.NewDBErr(), "find group member err %v groupReqId=%v", err, in.GroupReqId)
 	}
 
 	switch constants.HandlerResult(req.HandleResult) {

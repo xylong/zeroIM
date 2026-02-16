@@ -59,7 +59,7 @@ type GroupCreateReq struct {
 type GroupCreateResp struct {
 }
 
-type GroupListRep struct {
+type GroupListReq struct {
 }
 
 type GroupListResp struct {
@@ -77,7 +77,7 @@ type GroupMembers struct {
 	OperatorUid   string `json:"operator_uid,omitempty"`
 }
 
-type GroupPutInHandleRep struct {
+type GroupPutInHandleReq struct {
 	GroupReqId   int32  `json:"group_req_id,omitempty"`
 	GroupId      string `json:"group_id,omitempty"`
 	HandleResult int32  `json:"handle_result,omitempty"` // 处理结果
@@ -86,7 +86,7 @@ type GroupPutInHandleRep struct {
 type GroupPutInHandleResp struct {
 }
 
-type GroupPutInListRep struct {
+type GroupPutInListReq struct {
 	GroupId string `json:"group_id,omitempty"`
 }
 

@@ -9,10 +9,10 @@ import (
 	"zeroIM/apps/social/api/internal/types"
 )
 
-// 申请进群列表
+// GroupPutInListHandler 申请进群列表
 func GroupPutInListHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		var req types.GroupPutInListRep
+		var req types.GroupPutInListReq
 		if err := httpx.Parse(r, &req); err != nil {
 			httpx.ErrorCtx(r.Context(), w, err)
 			return

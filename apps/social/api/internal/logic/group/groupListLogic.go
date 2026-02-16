@@ -2,6 +2,10 @@ package group
 
 import (
 	"context"
+	"github.com/pkg/errors"
+	"zeroIM/apps/social/api/internal/dto"
+	"zeroIM/apps/social/rpc/socialClient"
+	"zeroIM/pkg/ctxdata"
 
 	"zeroIM/apps/social/api/internal/svc"
 	"zeroIM/apps/social/api/internal/types"
@@ -15,7 +19,7 @@ type GroupListLogic struct {
 	svcCtx *svc.ServiceContext
 }
 
-// 用户申群列表
+// NewGroupListLogic 用户申群列表
 func NewGroupListLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GroupListLogic {
 	return &GroupListLogic{
 		Logger: logx.WithContext(ctx),
@@ -24,8 +28,16 @@ func NewGroupListLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GroupLi
 	}
 }
 
-func (l *GroupListLogic) GroupList(req *types.GroupListRep) (resp *types.GroupListResp, err error) {
-	// todo: add your logic here and delete this line
+func (l *GroupListLogic) GroupList(req *types.GroupListRep) (*types.GroupListResp, error) {
+	uid := ctxdata.GetUId(l.ctx)
+	resp, err := l.svcCtx.Social.GroupList(l.ctx, &socialClient.GroupListReq{
+		UserId: uid,
+	})
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
 
-	return
+	return &types.GroupListResp{
+		List: dto.GroupToList(resp),
+	}, nil
 }

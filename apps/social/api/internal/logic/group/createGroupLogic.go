@@ -2,6 +2,9 @@ package group
 
 import (
 	"context"
+	"github.com/pkg/errors"
+	"zeroIM/apps/social/rpc/socialClient"
+	"zeroIM/pkg/ctxdata"
 
 	"zeroIM/apps/social/api/internal/svc"
 	"zeroIM/apps/social/api/internal/types"
@@ -15,7 +18,7 @@ type CreateGroupLogic struct {
 	svcCtx *svc.ServiceContext
 }
 
-// 创群
+// NewCreateGroupLogic 创群
 func NewCreateGroupLogic(ctx context.Context, svcCtx *svc.ServiceContext) *CreateGroupLogic {
 	return &CreateGroupLogic{
 		Logger: logx.WithContext(ctx),
@@ -24,8 +27,16 @@ func NewCreateGroupLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Creat
 	}
 }
 
-func (l *CreateGroupLogic) CreateGroup(req *types.GroupCreateReq) (resp *types.GroupCreateResp, err error) {
-	// todo: add your logic here and delete this line
+func (l *CreateGroupLogic) CreateGroup(req *types.GroupCreateReq) (*types.GroupCreateResp, error) {
+	uid := ctxdata.GetUId(l.ctx)
+	_, err := l.svcCtx.Social.GroupCreate(l.ctx, &socialClient.GroupCreateReq{
+		CreatorUid: uid,
+		Name:       req.Name,
+		Icon:       req.Icon,
+	})
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
 
-	return
+	return &types.GroupCreateResp{}, nil
 }

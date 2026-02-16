@@ -2,6 +2,10 @@ package friend
 
 import (
 	"context"
+	"github.com/pkg/errors"
+	"zeroIM/apps/social/api/internal/dto"
+	"zeroIM/apps/social/rpc/socialClient"
+	"zeroIM/pkg/ctxdata"
 
 	"zeroIM/apps/social/api/internal/svc"
 	"zeroIM/apps/social/api/internal/types"
@@ -15,7 +19,7 @@ type FriendPutInListLogic struct {
 	svcCtx *svc.ServiceContext
 }
 
-// 好友申请列表
+// NewFriendPutInListLogic 好友申请列表
 func NewFriendPutInListLogic(ctx context.Context, svcCtx *svc.ServiceContext) *FriendPutInListLogic {
 	return &FriendPutInListLogic{
 		Logger: logx.WithContext(ctx),
@@ -24,8 +28,15 @@ func NewFriendPutInListLogic(ctx context.Context, svcCtx *svc.ServiceContext) *F
 	}
 }
 
-func (l *FriendPutInListLogic) FriendPutInList(req *types.FriendPutInListReq) (resp *types.FriendPutInListResp, err error) {
-	// todo: add your logic here and delete this line
+func (l *FriendPutInListLogic) FriendPutInList(req *types.FriendPutInListReq) (*types.FriendPutInListResp, error) {
+	requests, err := l.svcCtx.Social.FriendPutInList(l.ctx, &socialClient.FriendPutInListReq{
+		UserId: ctxdata.GetUId(l.ctx),
+	})
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
 
-	return
+	return &types.FriendPutInListResp{
+		List: dto.FriendReqToListResp(requests),
+	}, nil
 }

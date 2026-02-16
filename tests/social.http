@@ -28,3 +28,12 @@ Accept: application/json
 
 {
 }
+
+### 好友申请列表
+GET http://127.0.0.1:8881/v1/social/friend/putIns
+Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3Nzk4Mzk5NjEsImlhdCI6MTc3MTE5OTk2MSwiemVyb0lNQ2hhdCI6IjB4MDAwMDAwODAwMDAwMDAwYyJ9.me7ZIQwxE44jWyHM7mEIjSsgEQshnR2YoWkGml1EpF4
+Accept: application/json
+
+{
+}

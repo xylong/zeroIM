@@ -57,3 +57,15 @@ Accept: application/json
 
 {
 }
+
+### 申请入群
+POST http://127.0.0.1:8881/v1/social/group/putIn
+Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3Nzk4NzMzNzMsImlhdCI6MTc3MTIzMzM3MywiemVyb0lNQ2hhdCI6IjB4MDAwMDAwODAwMDAwMDAwNCJ9.CojVexV88pN6dx6h_L7dDpnn4rR81F3nBLbSukUgnMY
+Accept: application/json
+
+{
+  "group_id": "0x0000009000000001",
+  "join_source": 2,
+  "req_msg": "不请自来"
+}

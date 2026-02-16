@@ -2,9 +2,12 @@ package group
 
 import (
 	"context"
-
+	"fmt"
+	"github.com/pkg/errors"
 	"zeroIM/apps/social/api/internal/svc"
 	"zeroIM/apps/social/api/internal/types"
+	"zeroIM/apps/social/rpc/socialClient"
+	"zeroIM/pkg/ctxdata"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -15,7 +18,7 @@ type GroupPutInLogic struct {
 	svcCtx *svc.ServiceContext
 }
 
-// 申请进群
+// NewGroupPutInLogic 申请进群
 func NewGroupPutInLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GroupPutInLogic {
 	return &GroupPutInLogic{
 		Logger: logx.WithContext(ctx),
@@ -24,8 +27,18 @@ func NewGroupPutInLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GroupP
 	}
 }
 
-func (l *GroupPutInLogic) GroupPutIn(req *types.GroupPutInRep) (resp *types.GroupPutInResp, err error) {
-	// todo: add your logic here and delete this line
+func (l *GroupPutInLogic) GroupPutIn(req *types.GroupPutInReq) (*types.GroupPutInResp, error) {
+	uid := ctxdata.GetUId(l.ctx)
+	_, err := l.svcCtx.Social.GroupPutin(l.ctx, &socialClient.GroupPutinReq{
+		GroupId:    req.GroupId,
+		ReqId:      uid,
+		JoinSource: int32(req.JoinSource),
+		ReqMsg:     req.ReqMsg,
+	})
+	if err != nil {
+		fmt.Println("RPC ERROR:", err)
+		return nil, errors.WithStack(err)
+	}
 
-	return
+	return &types.GroupPutInResp{}, nil
 }

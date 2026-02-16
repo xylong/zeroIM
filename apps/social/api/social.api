@@ -95,10 +95,9 @@ type (
 )
 
 type (
-	GroupPutInRep {
+	GroupPutInReq {
 		GroupId    string `json:"group_id,omitempty"`
 		ReqMsg     string `json:"req_msg,omitempty"`
-		ReqTime    int64  `json:"req_time,omitempty"`
 		JoinSource int64  `json:"join_source,omitempty"`
 	}
 	GroupPutInResp  {}
@@ -173,7 +172,7 @@ service social {
 
 	@doc "申请进群"
 	@handler groupPutIn
-	post /group/putIn (GroupPutInRep) returns (GroupPutInResp)
+	post /group/putIn (GroupPutInReq) returns (GroupPutInResp)
 
 	@doc "申请进群处理"
 	@handler groupPutInHandle

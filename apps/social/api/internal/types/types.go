@@ -94,10 +94,9 @@ type GroupPutInListResp struct {
 	List []*GroupRequests `json:"list,omitempty"`
 }
 
-type GroupPutInRep struct {
+type GroupPutInReq struct {
 	GroupId    string `json:"group_id,omitempty"`
 	ReqMsg     string `json:"req_msg,omitempty"`
-	ReqTime    int64  `json:"req_time,omitempty"`
 	JoinSource int64  `json:"join_source,omitempty"`
 }
 

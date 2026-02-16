@@ -6,9 +6,9 @@ Etcd:
   Key: social.rpc
 
 Mysql:
-  DSN: root:easy-chat@tcp(mysql:3306)/im?charset=utf8mb4&parseTime=true&loc=Asia%2FShanghai
+  DSN: root:123456@tcp(mysql:3306)/im?charset=utf8mb4&parseTime=true&loc=Asia%2FShanghai
 
 Cache:
   - Host: redis:6379
     Type: node
-    Pass: easy-chat
+    Pass: "123456"

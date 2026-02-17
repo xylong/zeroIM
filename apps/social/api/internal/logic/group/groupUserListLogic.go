@@ -30,6 +30,8 @@ func NewGroupUserListLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Gro
 }
 
 func (l *GroupUserListLogic) GroupUserList(req *types.GroupUserListReq) (*types.GroupUserListResp, error) {
+	// todo 优化，应冗余存储用户信息，减少rpc调用，现在是api层做数据聚合，胶水逻辑散落在接入层，难以复用、缓存、监控，复杂或大型项目里不建议
+
 	// 获取群成员
 	members, err := l.svcCtx.Social.GroupUsers(l.ctx, &socialClient.GroupUsersReq{
 		GroupId: req.GroupId,

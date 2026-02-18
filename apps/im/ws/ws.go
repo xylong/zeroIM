@@ -3,10 +3,11 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/alicebob/miniredis/v2/server"
 	"github.com/zeromicro/go-zero/core/conf"
 	"zeroIM/apps/im/ws/config"
+	"zeroIM/apps/im/ws/handler"
 	"zeroIM/apps/im/ws/svc"
+	"zeroIM/apps/im/ws/websocket"
 )
 
 var configFile = flag.String("f", "etc/dev/im.yaml", "the config file")
@@ -21,13 +22,12 @@ func main() {
 		panic(err)
 	}
 
-	svc.NewServiceContext(c)
+	srv := websocket.NewServer(c.ListenOn)
+	defer srv.Stop()
 
-	srv, err := server.NewServer(c.ListenOn)
-	defer srv.Close()
-
-	// todo: 待处理
+	ctx := svc.NewServiceContext(c)
+	handler.RegisterHandlers(srv, ctx)
 
 	fmt.Printf("Starting websocket server at %v ...\n", c.ListenOn)
-
+	srv.Start()
 }

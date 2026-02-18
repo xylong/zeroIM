@@ -119,17 +119,18 @@ func (s *Server) GetUid(conn *websocket.Conn) string {
 }
 
 // GetUserIds 获取多个连接对应的 uid
-func (s *Server) GetUserIds(conns ...*websocket.Conn) []string {
-	if len(conns) == 0 {
+func (s *Server) GetUserIds(cons ...*websocket.Conn) []string {
+	if len(cons) == 0 {
 		return nil
 	}
 	s.RLock()
 	defer s.RUnlock()
-	uids := make([]string, 0, len(conns))
-	for _, conn := range conns {
-		uids = append(uids, s.connToUser[conn])
+
+	userIds := make([]string, 0, len(cons))
+	for _, conn := range cons {
+		userIds = append(userIds, s.connToUser[conn])
 	}
-	return uids
+	return userIds
 }
 
 func (s *Server) GetAllUserIds() []string {

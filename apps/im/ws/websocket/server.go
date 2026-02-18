@@ -3,12 +3,15 @@ package websocket
 import (
 	"context"
 	"fmt"
+	"net/http"
+	"sync"
+
 	"github.com/gorilla/websocket"
 	"github.com/zeromicro/go-zero/core/jsonx"
 	"github.com/zeromicro/go-zero/core/logx"
-	"net/http"
-	"sync"
 )
+
+const defaultReadLimit = 512 * 1024 // 单条消息最大 512KB，防止恶意大包
 
 type Server struct {
 	sync.RWMutex
@@ -17,21 +20,27 @@ type Server struct {
 	addr   string
 
 	authentication Authentication
-	connToUser     map[*websocket.Conn]string
-	userToConn     map[string]*websocket.Conn
+	pattern        string
+
+	connToUser map[*websocket.Conn]string
+	userToConn map[string]*websocket.Conn
 
 	upgrader websocket.Upgrader
 	logx.Logger
 }
 
-func NewServer(addr string) *Server {
+func NewServer(addr string, options ...ServerOption) *Server {
+	sp := newServerOption(options...)
+
 	return &Server{
 		routes: make(map[string]HandleFunc),
 		addr:   addr,
 
-		authentication: new(authentication),
-		connToUser:     make(map[*websocket.Conn]string),
-		userToConn:     make(map[string]*websocket.Conn),
+		authentication: sp.auth,
+		pattern:        sp.pattern,
+
+		connToUser: make(map[*websocket.Conn]string),
+		userToConn: make(map[string]*websocket.Conn),
 
 		upgrader: websocket.Upgrader{
 			CheckOrigin: func(r *http.Request) bool {
@@ -55,34 +64,46 @@ func (s *Server) ServerWs(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if !s.authentication.Auth(w, r) {
+		_ = conn.WriteMessage(websocket.TextMessage, []byte("ws auth failed"))
+		_ = conn.Close()
+		return
+	}
+
+	conn.SetReadLimit(defaultReadLimit)
+	s.addConn(conn, r)
 	go s.handleConn(conn)
 }
 
 func (s *Server) addConn(conn *websocket.Conn, r *http.Request) {
 	uid := s.authentication.UserId(r)
 
-	s.RWMutex.Lock()
-	defer s.RWMutex.Unlock()
-
+	s.Lock()
+	oldConn, hadOld := s.userToConn[uid]
 	s.connToUser[conn] = uid
 	s.userToConn[uid] = conn
+	s.Unlock()
+
+	// 同用户重复登录时关闭旧连接并从映射移除
+	if hadOld && oldConn != nil && oldConn != conn {
+		s.Close(oldConn)
+	}
 }
 
 // GetConn 获取单个用户的连接
 func (s *Server) GetConn(uid string) *websocket.Conn {
-	s.RWMutex.Lock()
-	defer s.RWMutex.Unlock()
+	s.RLock()
+	defer s.RUnlock()
 	return s.userToConn[uid]
 }
 
-// GetConnections 获取多个用户的连接
+// GetConnections 获取多个用户的连接（可能包含 nil，表示该用户未连接）
 func (s *Server) GetConnections(uids ...string) []*websocket.Conn {
 	if len(uids) == 0 {
 		return nil
 	}
-	s.RWMutex.Lock()
-	defer s.RWMutex.Unlock()
-
+	s.RLock()
+	defer s.RUnlock()
 	connections := make([]*websocket.Conn, 0, len(uids))
 	for _, uid := range uids {
 		connections = append(connections, s.userToConn[uid])
@@ -90,26 +111,63 @@ func (s *Server) GetConnections(uids ...string) []*websocket.Conn {
 	return connections
 }
 
-// GetUid 获取单个用户的uid
+// GetUid 获取单个连接的 uid
 func (s *Server) GetUid(conn *websocket.Conn) string {
-	s.RWMutex.Lock()
-	defer s.RWMutex.Unlock()
+	s.RLock()
+	defer s.RUnlock()
 	return s.connToUser[conn]
 }
 
-// GetUids 获取多个用户的uid
-func (s *Server) GetUids(conns ...*websocket.Conn) []string {
+// GetUserIds 获取多个连接对应的 uid
+func (s *Server) GetUserIds(conns ...*websocket.Conn) []string {
 	if len(conns) == 0 {
 		return nil
 	}
-	s.RWMutex.Lock()
-	defer s.RWMutex.Unlock()
-
-	var uids []string
+	s.RLock()
+	defer s.RUnlock()
+	uids := make([]string, 0, len(conns))
 	for _, conn := range conns {
 		uids = append(uids, s.connToUser[conn])
 	}
 	return uids
+}
+
+func (s *Server) GetAllUserIds() []string {
+	s.RLock()
+	defer s.RUnlock()
+	userIds := make([]string, 0, len(s.connToUser))
+	for _, uid := range s.connToUser {
+		userIds = append(userIds, uid)
+	}
+	return userIds
+}
+
+func (s *Server) SendByUserId(message *Message, userIds ...string) error {
+	if len(userIds) == 0 {
+		return nil
+	}
+
+	return s.Send(message, s.GetConnections(userIds...)...)
+}
+
+// Send 发送消息
+func (s *Server) Send(message *Message, conns ...*websocket.Conn) error {
+	if len(conns) == 0 {
+		return nil
+	}
+
+	data, err := jsonx.Marshal(message)
+	if err != nil {
+		return err
+	}
+
+	for _, conn := range conns {
+		if err := conn.WriteMessage(websocket.TextMessage, data); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 // Close 关闭单个连接
@@ -120,7 +178,7 @@ func (s *Server) Close(conn *websocket.Conn) {
 		return
 	}
 
-	// 先删除映射，不阻塞锁
+	// 删除映射(不阻塞锁尽早释放，可以防止新的消息被路由到已关闭的连接)
 	{
 		s.Lock()
 		uid, exists := s.connToUser[conn]
@@ -140,28 +198,30 @@ func (s *Server) Close(conn *websocket.Conn) {
 		s.Unlock()
 	}
 
-	// 再关闭连接(锁外执行，避免持有锁时阻塞)
+	// 关闭连接，可能耗时(锁外执行，避免持有锁时阻塞)
 	if err := conn.Close(); err != nil {
 		s.Errorf("ws close conn err: %v", err)
 	}
 }
 
 func (s *Server) handleConn(conn *websocket.Conn) {
+	defer s.Close(conn) // 无论正常退出还是异常退出，都从映射中移除并关闭连接
+
 	for {
-		// 读取消息
 		_, msg, err := conn.ReadMessage()
 		if err != nil {
 			s.Errorf("ws read message err: %v", err)
 			return
 		}
-		// 解析消息
 		var message Message
 		if err = jsonx.Unmarshal(msg, &message); err != nil {
-			s.Errorf("ws unmarshal message err: %v, msg", err, string(msg))
+			s.Errorf("ws unmarshal message err: %v, msg: %s", err, string(msg))
 			return
 		}
-		// 按路由处理
-		if handler, ok := s.routes[message.Method]; ok {
+		s.RLock()
+		handler, ok := s.routes[message.Method]
+		s.RUnlock()
+		if ok {
 			handler(s, conn, &message)
 		} else {
 			_ = conn.WriteMessage(websocket.TextMessage, []byte(fmt.Sprintf("ws no route %v", message.Method)))
@@ -169,16 +229,20 @@ func (s *Server) handleConn(conn *websocket.Conn) {
 	}
 }
 
-// AddRoutes 添加路由
+// AddRoutes 添加路由（应在 Start 之前调用，或与 handleConn 并发安全）
 func (s *Server) AddRoutes(routes []Route) {
+	s.Lock()
+	defer s.Unlock()
 	for _, route := range routes {
 		s.routes[route.Method] = route.Handler
 	}
 }
 
 func (s *Server) Start() {
-	http.HandleFunc("/ws", s.ServerWs)
-	_ = http.ListenAndServe(s.addr, nil)
+	http.HandleFunc(s.pattern, s.ServerWs)
+	if err := http.ListenAndServe(s.addr, nil); err != nil && err != http.ErrServerClosed {
+		s.Errorf("ws server listen err: %v", err)
+	}
 }
 
 func (s *Server) Stop() {

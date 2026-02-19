@@ -47,42 +47,53 @@ func NewServer(addr string, options ...ServerOption) *Server {
 			CheckOrigin: func(r *http.Request) bool {
 				return true
 			},
+			ReadBufferSize:  1024,
+			WriteBufferSize: 1024,
 		},
 		Logger: logx.WithContext(context.Background()),
 	}
 }
 
 func (s *Server) ServerWs(w http.ResponseWriter, r *http.Request) {
-	defer func() {
-		if err := recover(); err != nil {
-			s.Errorf("server handle websocket recover err: %v", err)
-		}
-	}()
-
-	conn, err := s.upgrader.Upgrade(w, r, nil)
-	if err != nil {
-		s.Errorf("upgrade: %v", err)
+	// 先鉴权，防止握手消耗
+	if !s.authentication.Auth(w, r) {
+		http.Error(w, "ws auth failed，access denied", http.StatusUnauthorized)
+		return
+	}
+	uid := s.authentication.UserId(r)
+	if uid == "" {
+		http.Error(w, "user id missing", http.StatusForbidden)
 		return
 	}
 
-	if !s.authentication.Auth(w, r) {
-		_ = conn.WriteMessage(websocket.TextMessage, []byte("ws auth failed"))
-		_ = conn.Close()
+	// 升级为 websocket 连接
+	conn, err := s.upgrader.Upgrade(w, r, nil)
+	if err != nil {
+		s.Errorf("websocket upgrade error: %v", err)
 		return
 	}
 
 	conn.SetReadLimit(defaultReadLimit)
-	s.addConn(conn, r)
-	go s.handleConn(conn)
+	s.addConn(conn, uid)
+
+	go func() {
+		defer func() {
+			if err := recover(); err != nil {
+				s.Errorf("handleConn panic: %v", err)
+			}
+			s.Close(conn) // 统一清理
+		}()
+
+		s.handleConn(conn)
+	}()
 }
 
-func (s *Server) addConn(conn *websocket.Conn, r *http.Request) {
-	uid := s.authentication.UserId(r)
+func (s *Server) addConn(conn *websocket.Conn, userId string) {
 
 	s.Lock()
-	oldConn, hadOld := s.userToConn[uid]
-	s.connToUser[conn] = uid
-	s.userToConn[uid] = conn
+	oldConn, hadOld := s.userToConn[userId]
+	s.connToUser[conn] = userId
+	s.userToConn[userId] = conn
 	s.Unlock()
 
 	// 同用户重复登录时关闭旧连接并从映射移除

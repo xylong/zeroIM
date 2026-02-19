@@ -1,6 +1,6 @@
 package svc
 
-import "zeroIM/apps/im/ws/config"
+import "zeroIM/apps/im/ws/internal/config"
 
 type ServiceContext struct {
 	Config config.Config

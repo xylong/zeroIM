@@ -22,7 +22,7 @@ Content-Type: application/json
 ### 获取登录用户信息
 GET http://127.0.0.1:8888/v1/user/user
 Content-Type: application/json
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3Nzk4NzMzNzMsImlhdCI6MTc3MTIzMzM3MywiemVyb0lNQ2hhdCI6IjB4MDAwMDAwODAwMDAwMDAwNCJ9.CojVexV88pN6dx6h_L7dDpnn4rR81F3nBLbSukUgnMY
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NzE1NTE2NTYsImlhdCI6MTc3MTQ2NTI1NiwiemVyb0lNQ2hhdCI6IjB4MDAwMDAwODAwMDAwMDAwYyJ9.SxFsAA5lzNi23-r9pL3SOXlWaVIyafg5quH28fYBXJQ
 Accept: application/json
 
 {

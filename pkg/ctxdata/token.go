@@ -1,6 +1,8 @@
 package ctxdata
 
-import "github.com/golang-jwt/jwt"
+import (
+	"github.com/golang-jwt/jwt/v4"
+)
 
 const Identify = "zeroIMChat"
 

@@ -1,2 +1,15 @@
 Name: im.ws
 ListenOn: 0.0.0.0:10090
+
+JwtAuth:
+  AccessSecret: zeroIMChat
+  AccessExpire: 86400
+
+Mongo:
+  Url: "mongodb://root:123456@mongo:47017"
+  Db: im
+
+MsgChatTransfer:
+  Topic: msgChatTransfer
+  Addrs:
+    - 192.168.117.24:9092

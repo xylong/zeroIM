@@ -2,6 +2,7 @@ package websocket
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"sync"
@@ -241,7 +242,7 @@ func (s *Server) AddRoutes(routes []Route) {
 
 func (s *Server) Start() {
 	http.HandleFunc(s.pattern, s.ServerWs)
-	if err := http.ListenAndServe(s.addr, nil); err != nil && err != http.ErrServerClosed {
+	if err := http.ListenAndServe(s.addr, nil); err != nil && !errors.Is(err, http.ErrServerClosed) {
 		s.Errorf("ws server listen err: %v", err)
 	}
 }

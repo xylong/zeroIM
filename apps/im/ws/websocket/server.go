@@ -12,19 +12,18 @@ import (
 	"github.com/zeromicro/go-zero/core/logx"
 )
 
-const defaultReadLimit = 512 * 1024 // 单条消息最大 512KB，防止恶意大包
-
 type Server struct {
 	sync.RWMutex
 
 	routes map[string]HandleFunc // 路由
 	addr   string
 
+	opt            *serverOption
 	authentication Authentication
 	pattern        string
 
-	connToUser map[*websocket.Conn]string
-	userToConn map[string]*websocket.Conn
+	connToUser map[*Conn]string
+	userToConn map[string]*Conn
 
 	upgrader websocket.Upgrader
 	logx.Logger
@@ -40,8 +39,8 @@ func NewServer(addr string, options ...ServerOption) *Server {
 		authentication: sp.auth,
 		pattern:        sp.pattern,
 
-		connToUser: make(map[*websocket.Conn]string),
-		userToConn: make(map[string]*websocket.Conn),
+		connToUser: make(map[*Conn]string),
+		userToConn: make(map[string]*Conn),
 
 		upgrader: websocket.Upgrader{
 			CheckOrigin: func(r *http.Request) bool {
@@ -57,23 +56,24 @@ func NewServer(addr string, options ...ServerOption) *Server {
 func (s *Server) ServerWs(w http.ResponseWriter, r *http.Request) {
 	// 先鉴权，防止握手消耗
 	if !s.authentication.Auth(w, r) {
-		http.Error(w, "ws auth failed，access denied", http.StatusUnauthorized)
+		//http.Error(w, "ws auth failed，access denied", http.StatusUnauthorized)
+		w.Write([]byte("ws auth failed，access denied"))
 		return
 	}
 	uid := s.authentication.UserId(r)
 	if uid == "" {
-		http.Error(w, "user id missing", http.StatusForbidden)
+		//http.Error(w, "user id missing", http.StatusForbidden)
+		w.Write([]byte("user id missing"))
 		return
 	}
 
 	// 升级为 websocket 连接
-	conn, err := s.upgrader.Upgrade(w, r, nil)
-	if err != nil {
-		s.Errorf("websocket upgrade error: %v", err)
+	conn := NewConn(s, w, r)
+	if conn == nil {
+		w.Write([]byte("ws upgrade failed"))
 		return
 	}
 
-	conn.SetReadLimit(defaultReadLimit)
 	s.addConn(conn, uid)
 
 	go func() {
@@ -88,8 +88,7 @@ func (s *Server) ServerWs(w http.ResponseWriter, r *http.Request) {
 	}()
 }
 
-func (s *Server) addConn(conn *websocket.Conn, userId string) {
-
+func (s *Server) addConn(conn *Conn, userId string) {
 	s.Lock()
 	oldConn, hadOld := s.userToConn[userId]
 	s.connToUser[conn] = userId
@@ -103,20 +102,20 @@ func (s *Server) addConn(conn *websocket.Conn, userId string) {
 }
 
 // GetConn 获取单个用户的连接
-func (s *Server) GetConn(uid string) *websocket.Conn {
+func (s *Server) GetConn(uid string) *Conn {
 	s.RLock()
 	defer s.RUnlock()
 	return s.userToConn[uid]
 }
 
 // GetConnections 获取多个用户的连接（可能包含 nil，表示该用户未连接）
-func (s *Server) GetConnections(uids ...string) []*websocket.Conn {
+func (s *Server) GetConnections(uids ...string) []*Conn {
 	if len(uids) == 0 {
 		return nil
 	}
 	s.RLock()
 	defer s.RUnlock()
-	connections := make([]*websocket.Conn, 0, len(uids))
+	connections := make([]*Conn, 0, len(uids))
 	for _, uid := range uids {
 		connections = append(connections, s.userToConn[uid])
 	}
@@ -124,14 +123,14 @@ func (s *Server) GetConnections(uids ...string) []*websocket.Conn {
 }
 
 // GetUid 获取单个连接的 uid
-func (s *Server) GetUid(conn *websocket.Conn) string {
+func (s *Server) GetUid(conn *Conn) string {
 	s.RLock()
 	defer s.RUnlock()
 	return s.connToUser[conn]
 }
 
 // GetUserIds 获取多个连接对应的 uid
-func (s *Server) GetUserIds(cons ...*websocket.Conn) []string {
+func (s *Server) GetUserIds(cons ...*Conn) []string {
 	if len(cons) == 0 {
 		return nil
 	}
@@ -164,7 +163,7 @@ func (s *Server) SendByUserId(message *Message, userIds ...string) error {
 }
 
 // Send 发送消息
-func (s *Server) Send(message *Message, conns ...*websocket.Conn) error {
+func (s *Server) Send(message *Message, conns ...*Conn) error {
 	if len(conns) == 0 {
 		return nil
 	}
@@ -185,7 +184,7 @@ func (s *Server) Send(message *Message, conns ...*websocket.Conn) error {
 
 // Close 关闭单个连接
 // todo：使用原子状态标记（推荐），不能简单地“先删映射再 Close”，如果 Close 阻塞或失败，连接已从映射移除，无法重试清理，给每个连接附加一个 关闭状态标志，配合 sync.Once 确保只关闭一次
-func (s *Server) Close(conn *websocket.Conn) {
+func (s *Server) Close(conn *Conn) {
 	// 安全检查
 	if conn == nil {
 		return
@@ -212,12 +211,12 @@ func (s *Server) Close(conn *websocket.Conn) {
 	}
 
 	// 关闭连接，可能耗时(锁外执行，避免持有锁时阻塞)
-	if err := conn.Close(); err != nil {
+	if err := conn.conn.Close(); err != nil {
 		s.Errorf("ws close conn err: %v", err)
 	}
 }
 
-func (s *Server) handleConn(conn *websocket.Conn) {
+func (s *Server) handleConn(conn *Conn) {
 	defer s.Close(conn) // 无论正常退出还是异常退出，都从映射中移除并关闭连接
 
 	for {

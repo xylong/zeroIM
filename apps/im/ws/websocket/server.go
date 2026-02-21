@@ -8,7 +8,6 @@ import (
 	"sync"
 
 	"github.com/gorilla/websocket"
-	"github.com/zeromicro/go-zero/core/jsonx"
 	"github.com/zeromicro/go-zero/core/logx"
 )
 
@@ -56,36 +55,23 @@ func NewServer(addr string, options ...ServerOption) *Server {
 func (s *Server) ServerWs(w http.ResponseWriter, r *http.Request) {
 	// 先鉴权，防止握手消耗
 	if !s.authentication.Auth(w, r) {
-		//http.Error(w, "ws auth failed，access denied", http.StatusUnauthorized)
-		w.Write([]byte("ws auth failed，access denied"))
+		http.Error(w, "ws auth failed，access denied", http.StatusUnauthorized)
 		return
 	}
 	uid := s.authentication.UserId(r)
 	if uid == "" {
-		//http.Error(w, "user id missing", http.StatusForbidden)
-		w.Write([]byte("user id missing"))
+		http.Error(w, "user id missing", http.StatusForbidden)
 		return
 	}
 
 	// 升级为 websocket 连接
 	conn := NewConn(s, w, r)
 	if conn == nil {
-		w.Write([]byte("ws upgrade failed"))
+		http.Error(w, "websocket upgrade failed", http.StatusInternalServerError)
 		return
 	}
 
 	s.addConn(conn, uid)
-
-	go func() {
-		defer func() {
-			if err := recover(); err != nil {
-				s.Errorf("handleConn panic: %v", err)
-			}
-			s.Close(conn) // 统一清理
-		}()
-
-		s.handleConn(conn)
-	}()
 }
 
 func (s *Server) addConn(conn *Conn, userId string) {
@@ -97,7 +83,7 @@ func (s *Server) addConn(conn *Conn, userId string) {
 
 	// 同用户重复登录时关闭旧连接并从映射移除
 	if hadOld && oldConn != nil && oldConn != conn {
-		s.Close(oldConn)
+		s.cleanupConn(oldConn)
 	}
 }
 
@@ -159,22 +145,9 @@ func (s *Server) SendByUserId(message *Message, userIds ...string) error {
 		return nil
 	}
 
-	return s.Send(message, s.GetConnections(userIds...)...)
-}
-
-// Send 发送消息
-func (s *Server) Send(message *Message, conns ...*Conn) error {
-	if len(conns) == 0 {
-		return nil
-	}
-
-	data, err := jsonx.Marshal(message)
-	if err != nil {
-		return err
-	}
-
+	conns := s.GetConnections(userIds...)
 	for _, conn := range conns {
-		if err := conn.WriteMessage(websocket.TextMessage, data); err != nil {
+		if err := conn.Send(message); err != nil {
 			return err
 		}
 	}
@@ -182,63 +155,30 @@ func (s *Server) Send(message *Message, conns ...*Conn) error {
 	return nil
 }
 
-// Close 关闭单个连接
-// todo：使用原子状态标记（推荐），不能简单地“先删映射再 Close”，如果 Close 阻塞或失败，连接已从映射移除，无法重试清理，给每个连接附加一个 关闭状态标志，配合 sync.Once 确保只关闭一次
-func (s *Server) Close(conn *Conn) {
+// cleanupConn 删除连接
+func (s *Server) cleanupConn(conn *Conn) {
 	// 安全检查
 	if conn == nil {
 		return
 	}
 
 	// 删除映射(不阻塞锁尽早释放，可以防止新的消息被路由到已关闭的连接)
-	{
-		s.Lock()
-		uid, exists := s.connToUser[conn]
-		// 连接未注册或已被清理，直接返回
-		if !exists {
-			s.Unlock()
-			return
-		}
-		delete(s.connToUser, conn)
-
-		// 防止空 uid 导致误删
-		if uid != "" {
-			if existingConn, ok := s.userToConn[uid]; ok && existingConn == conn {
-				delete(s.userToConn, uid)
-			}
-		}
+	s.Lock()
+	uid, exists := s.connToUser[conn]
+	// 连接未注册或已被清理，直接返回
+	if !exists {
 		s.Unlock()
+		return
 	}
+	delete(s.connToUser, conn)
 
-	// 关闭连接，可能耗时(锁外执行，避免持有锁时阻塞)
-	if err := conn.conn.Close(); err != nil {
-		s.Errorf("ws close conn err: %v", err)
-	}
-}
-
-func (s *Server) handleConn(conn *Conn) {
-	defer s.Close(conn) // 无论正常退出还是异常退出，都从映射中移除并关闭连接
-
-	for {
-		_, msg, err := conn.ReadMessage()
-		if err != nil {
-			s.Errorf("ws read message err: %v", err)
-			return
-		}
-		var message Message
-		if err = jsonx.Unmarshal(msg, &message); err != nil {
-			s.Errorf("ws unmarshal message err: %v, msg: %s", err, string(msg))
-			return
-		}
-		s.RLock()
-		handler, ok := s.routes[message.Method]
-		s.RUnlock()
-		if ok {
-			handler(s, conn, &message)
-		} else {
-			_ = conn.WriteMessage(websocket.TextMessage, []byte(fmt.Sprintf("ws no route %v", message.Method)))
+	// 防止空 uid 导致误删
+	if uid != "" {
+		if existingConn, ok := s.userToConn[uid]; ok && existingConn == conn {
+			delete(s.userToConn, uid)
 		}
 	}
+	s.Unlock()
 }
 
 // AddRoutes 添加路由（应在 Start 之前调用，或与 handleConn 并发安全）

@@ -5,6 +5,7 @@ type FrameType uint8
 const (
 	FrameData FrameType = 0x0 // 数据帧
 	FramePing FrameType = 0x1 // 心跳包
+	FrameErr  FrameType = 0x2
 )
 
 // Message ws消息
@@ -21,5 +22,13 @@ func NewMessage(fromId, userId string, data interface{}) *Message {
 		FrameType: FrameData,
 		FromId:    fromId,
 		UserId:    userId,
-		Data:      data}
+		Data:      data,
+	}
+}
+
+func NewErrMessage(err error) *Message {
+	return &Message{
+		FrameType: FrameErr,
+		Data:      err.Error(),
+	}
 }

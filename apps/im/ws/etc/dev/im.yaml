@@ -6,7 +6,7 @@ JwtAuth:
   AccessExpire: 86400
 
 Mongo:
-  Url: "mongodb://root:123456@mongo:47017"
+  Url: "mongodb://root:123456@127.0.0.1:27017"
   Db: im
 
 MsgChatTransfer:

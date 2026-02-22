@@ -102,7 +102,7 @@ func (c *Conn) readPump() {
 		c.touch()
 		var message Message
 		if err := jsonx.Unmarshal(data, &message); err != nil {
-			c.server.Errorf("ws unmarshal message err: %v, msg: %s", err, string(data))
+			_ = c.Send(NewErrMessage(err))
 			continue
 		}
 

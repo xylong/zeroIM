@@ -6,8 +6,8 @@ JwtAuth:
   AccessExpire: 86400
 
 Mongo:
-  Url: "mongodb://root:123456@127.0.0.1:47017"
-  Db: easy-chat
+  Url: "mongodb://root:123456@127.0.0.1:27017"
+  Db: im
 
 MsgChatTransfer:
   Topic: msgChatTransfer

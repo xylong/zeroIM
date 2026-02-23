@@ -6,7 +6,7 @@ import (
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/rest/token"
 	"net/http"
-	"zeroIM/apps/im/ws/svc"
+	"zeroIM/apps/im/ws/internal/svc"
 	"zeroIM/pkg/ctxdata"
 )
 

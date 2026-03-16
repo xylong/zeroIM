@@ -28,15 +28,16 @@ func newGroup(db *gorm.DB, opts ...gen.DOOption) group {
 
 	tableName := _group.groupDo.TableName()
 	_group.ALL = field.NewAsterisk(tableName)
-	_group.ID = field.NewString(tableName, "id")
+	_group.ID = field.NewInt64(tableName, "id")
 	_group.Name = field.NewString(tableName, "name")
 	_group.Icon = field.NewString(tableName, "icon")
-	_group.Status = field.NewInt64(tableName, "status")
-	_group.CreatorUID = field.NewString(tableName, "creator_uid")
-	_group.GroupType = field.NewInt64(tableName, "group_type")
-	_group.IsVerify = field.NewInt64(tableName, "is_verify")
+	_group.Status = field.NewInt8(tableName, "status")
+	_group.CreatorUID = field.NewInt64(tableName, "creator_uid")
+	_group.GroupType = field.NewInt8(tableName, "group_type")
+	_group.IsVerify = field.NewInt8(tableName, "is_verify")
 	_group.Notification = field.NewString(tableName, "notification")
-	_group.NotificationUID = field.NewString(tableName, "notification_uid")
+	_group.NotificationUID = field.NewInt64(tableName, "notification_uid")
+	_group.MemberCount = field.NewInt(tableName, "member_count")
 	_group.CreatedAt = field.NewTime(tableName, "created_at")
 	_group.UpdatedAt = field.NewTime(tableName, "updated_at")
 	_group.DeletedAt = field.NewField(tableName, "deleted_at")
@@ -50,15 +51,16 @@ type group struct {
 	groupDo groupDo
 
 	ALL             field.Asterisk
-	ID              field.String
+	ID              field.Int64
 	Name            field.String // 群名
-	Icon            field.String // 图标
-	Status          field.Int64  // 状态
-	CreatorUID      field.String // 创建人用户id
-	GroupType       field.Int64  // 群类型
-	IsVerify        field.Int64  // 是否认证
-	Notification    field.String // 公告通知
-	NotificationUID field.String // 公告通知发布人id
+	Icon            field.String // 群图标
+	Status          field.Int8   // 1开启 0关闭
+	CreatorUID      field.Int64  // 创建人uid
+	GroupType       field.Int8   // 1=普通群 2=企业群 3=聊天室
+	IsVerify        field.Int8   // 入群验证：1开启 2关闭
+	Notification    field.String // 群公告
+	NotificationUID field.Int64  // 最后设置公告的人uid
+	MemberCount     field.Int    // 群人数
 	CreatedAt       field.Time   // 创建时间
 	UpdatedAt       field.Time   // 更新时间
 	DeletedAt       field.Field  // 删除时间
@@ -78,15 +80,16 @@ func (g group) As(alias string) *group {
 
 func (g *group) updateTableName(table string) *group {
 	g.ALL = field.NewAsterisk(table)
-	g.ID = field.NewString(table, "id")
+	g.ID = field.NewInt64(table, "id")
 	g.Name = field.NewString(table, "name")
 	g.Icon = field.NewString(table, "icon")
-	g.Status = field.NewInt64(table, "status")
-	g.CreatorUID = field.NewString(table, "creator_uid")
-	g.GroupType = field.NewInt64(table, "group_type")
-	g.IsVerify = field.NewInt64(table, "is_verify")
+	g.Status = field.NewInt8(table, "status")
+	g.CreatorUID = field.NewInt64(table, "creator_uid")
+	g.GroupType = field.NewInt8(table, "group_type")
+	g.IsVerify = field.NewInt8(table, "is_verify")
 	g.Notification = field.NewString(table, "notification")
-	g.NotificationUID = field.NewString(table, "notification_uid")
+	g.NotificationUID = field.NewInt64(table, "notification_uid")
+	g.MemberCount = field.NewInt(table, "member_count")
 	g.CreatedAt = field.NewTime(table, "created_at")
 	g.UpdatedAt = field.NewTime(table, "updated_at")
 	g.DeletedAt = field.NewField(table, "deleted_at")
@@ -114,7 +117,7 @@ func (g *group) GetFieldByName(fieldName string) (field.OrderExpr, bool) {
 }
 
 func (g *group) fillFieldMap() {
-	g.fieldMap = make(map[string]field.Expr, 12)
+	g.fieldMap = make(map[string]field.Expr, 13)
 	g.fieldMap["id"] = g.ID
 	g.fieldMap["name"] = g.Name
 	g.fieldMap["icon"] = g.Icon
@@ -124,6 +127,7 @@ func (g *group) fillFieldMap() {
 	g.fieldMap["is_verify"] = g.IsVerify
 	g.fieldMap["notification"] = g.Notification
 	g.fieldMap["notification_uid"] = g.NotificationUID
+	g.fieldMap["member_count"] = g.MemberCount
 	g.fieldMap["created_at"] = g.CreatedAt
 	g.fieldMap["updated_at"] = g.UpdatedAt
 	g.fieldMap["deleted_at"] = g.DeletedAt

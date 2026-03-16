@@ -34,7 +34,7 @@ func NewGroupPutinLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GroupP
 
 func (l *GroupPutinLogic) GroupPutin(in *social.GroupPutinReq) (*social.GroupPutinResp, error) {
 	// 1. 参数校验
-	if in.GroupId == "" || in.ReqId == "" {
+	if in.GroupId <= 0 || in.ReqId <= 0 {
 		return nil, errors2.WithStack(xerr.NewReqParamErr())
 	}
 
@@ -54,7 +54,7 @@ func (l *GroupPutinLogic) GroupPutin(in *social.GroupPutinReq) (*social.GroupPut
 	req, err := l.svcCtx.Dao.GroupRequest.WithContext(l.ctx).
 		Where(l.svcCtx.Dao.GroupRequest.GroupID.Eq(in.GroupId)).
 		Where(l.svcCtx.Dao.GroupRequest.ReqID.Eq(in.ReqId)).
-		Where(l.svcCtx.Dao.GroupRequest.HandleResult.Eq(int64(constants.NoHandlerResult))).
+		Where(l.svcCtx.Dao.GroupRequest.HandleResult.Eq(constants.NoHandlerResult.Uint8())).
 		First()
 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, errors2.Wrapf(xerr.NewDBErr(), "find group req err %v, groupId %s, userId %s", err, in.GroupId, in.ReqId)
@@ -79,9 +79,9 @@ func (l *GroupPutinLogic) GroupPutin(in *social.GroupPutinReq) (*social.GroupPut
 		ReqID:         in.ReqId,
 		GroupID:       in.GroupId,
 		ReqMsg:        in.ReqMsg,
-		JoinSource:    int8(in.JoinSource),
+		JoinSource:    uint8(in.JoinSource),
 		InviterUserID: in.InviterUid,
-		HandleResult:  int8(constants.NoHandlerResult),
+		HandleResult:  constants.NoHandlerResult.Uint8(),
 	}
 
 	// 6. 判断是否可以自动通过
@@ -106,20 +106,20 @@ func (l *GroupPutinLogic) GroupPutin(in *social.GroupPutinReq) (*social.GroupPut
 
 	// 7. 执行入群逻辑（事务）
 	if isPass {
-		groupReq.HandleResult = int8(constants.PassHandlerResult)
-		groupReq.HandleTime = func(t time.Time) *time.Time { return &t }(time.Now())
+		groupReq.HandleResult = constants.PassHandlerResult.Uint8()
+		groupReq.HandledAt = func(t time.Time) *time.Time { return &t }(time.Now())
 
 		err = l.svcCtx.Dao.Transaction(func(tx *dao.Query) error {
 			if err := tx.GroupRequest.WithContext(l.ctx).Create(groupReq); err != nil {
 				return err
 			}
 			return tx.GroupMember.WithContext(l.ctx).Create(&models.GroupMember{
-				GroupID:     in.GroupId,
-				UserID:      in.ReqId,
-				OperatorUID: in.InviterUid,
-				InviterUID:  in.InviterUid,
-				RoleLevel:   int8(constants.AtLargeGroupRoleLevel),
-				JoinSource:  int8(in.JoinSource),
+				GroupID:         in.GroupId,
+				UserID:          in.ReqId,
+				LastOperatorUID: in.InviterUid,
+				InviterUID:      in.InviterUid,
+				RoleLevel:       constants.AtLargeGroupRoleLevel.Uint8(),
+				JoinSource:      uint8(in.JoinSource),
 			})
 		})
 		if err != nil {

@@ -7,18 +7,18 @@ import (
 
 // GroupRequest 入群申请表
 type GroupRequest struct {
-	ID            uint           `gorm:"column:id;primaryKey;autoIncrement" json:"id"`
-	ReqID         string         `gorm:"column:req_id;type:varchar(64);not null;index:idx_req_created,priority:1;comment:申请人uid" json:"req_id"`
-	GroupID       string         `gorm:"column:group_id;type:varchar(64);not null;index:idx_group_created,priority:1;comment:群id" json:"group_id"`
-	ReqMsg        string         `gorm:"column:req_msg;type:varchar(255);not null;comment:申请信息" json:"req_msg"`
-	JoinSource    int8           `gorm:"column:join_source;type:tinyint;not null;default:2;comment:入群方式：1邀请 2申请" json:"join_source"`
-	InviterUserID string         `gorm:"column:inviter_user_id;type:varchar(64);not null;comment:邀请人uid" json:"inviter_user_id"`
-	HandleUserID  string         `gorm:"column:handle_user_id;type:varchar(64);not null;default:'';comment:处理人uid" json:"handle_user_id"`
-	HandleTime    *time.Time     `gorm:"column:handle_time;type:timestamp;comment:处理时间" json:"handle_time,omitempty"`
-	HandleResult  int8           `gorm:"column:handle_result;type:tinyint;not null;comment:1未处理 2通过 3拒绝 4取消" json:"handle_result"`
-	CreatedAt     time.Time      `gorm:"column:created_at;type:timestamp;not null;index:idx_group_created,priority:2;index:idx_req_created,priority:2" json:"created_at"`
-	UpdatedAt     time.Time      `gorm:"column:updated_at;type:timestamp;not null" json:"updated_at"`
-	DeletedAt     gorm.DeletedAt `gorm:"column:deleted_at;index" json:"-"`
+	ID            int64          `gorm:"primaryKey;column:id;type:int unsigned;autoIncrement;comment:自增主键"`
+	ReqID         int64          `gorm:"column:req_id;type:int unsigned;not null;index:idx_requester_status;comment:申请人/被邀请人 uid"`
+	GroupID       int64          `gorm:"column:group_id;type:int unsigned;not null;index:idx_group_pending,priority:1;uniqueIndex:uk_group_req,priority:1;comment:群id"`
+	ReqMsg        string         `gorm:"column:req_msg;type:varchar(100);not null;default:'';comment:申请/邀请附言"`
+	JoinSource    uint8          `gorm:"column:join_source;type:tinyint unsigned;not null;default:2;comment:1=被邀请入群 2=主动申请"`
+	InviterUserID int64          `gorm:"column:inviter_user_id;type:int unsigned;not null;default:0;comment:邀请人uid（join_source=1时有效）"`
+	HandleUserID  int64          `gorm:"column:handle_user_id;type:int unsigned;not null;default:0;comment:处理人uid（群管理员/群主）"`
+	HandleResult  uint8          `gorm:"column:handle_result;type:tinyint unsigned;not null;default:1;index:idx_group_pending,priority:2;index:idx_requester_status,priority:2;comment:1=待处理 2=通过 3=拒绝 4=取消"`
+	HandledAt     *time.Time     `gorm:"column:handled_at;comment:处理时间"`
+	CreatedAt     time.Time      `gorm:"column:created_at;autoCreateTime;comment:创建时间"`
+	UpdatedAt     time.Time      `gorm:"column:updated_at;autoUpdateTime;comment:更新时间"`
+	DeletedAt     gorm.DeletedAt `gorm:"column:deleted_at;index;comment:删除时间（软删除）"`
 }
 
 // TableName GroupRequest's table name

@@ -29,15 +29,14 @@ func newGroupRequest(db *gorm.DB, opts ...gen.DOOption) groupRequest {
 	tableName := _groupRequest.groupRequestDo.TableName()
 	_groupRequest.ALL = field.NewAsterisk(tableName)
 	_groupRequest.ID = field.NewInt64(tableName, "id")
-	_groupRequest.ReqID = field.NewString(tableName, "req_id")
-	_groupRequest.GroupID = field.NewString(tableName, "group_id")
+	_groupRequest.ReqID = field.NewInt64(tableName, "req_id")
+	_groupRequest.GroupID = field.NewInt64(tableName, "group_id")
 	_groupRequest.ReqMsg = field.NewString(tableName, "req_msg")
-	_groupRequest.ReqTime = field.NewTime(tableName, "req_time")
-	_groupRequest.JoinSource = field.NewInt64(tableName, "join_source")
-	_groupRequest.InviterUserID = field.NewString(tableName, "inviter_user_id")
-	_groupRequest.HandleUserID = field.NewString(tableName, "handle_user_id")
-	_groupRequest.HandleTime = field.NewTime(tableName, "handle_time")
-	_groupRequest.HandleResult = field.NewInt64(tableName, "handle_result")
+	_groupRequest.JoinSource = field.NewUint8(tableName, "join_source")
+	_groupRequest.InviterUserID = field.NewInt64(tableName, "inviter_user_id")
+	_groupRequest.HandleUserID = field.NewInt64(tableName, "handle_user_id")
+	_groupRequest.HandleResult = field.NewUint8(tableName, "handle_result")
+	_groupRequest.HandledAt = field.NewTime(tableName, "handled_at")
 	_groupRequest.CreatedAt = field.NewTime(tableName, "created_at")
 	_groupRequest.UpdatedAt = field.NewTime(tableName, "updated_at")
 	_groupRequest.DeletedAt = field.NewField(tableName, "deleted_at")
@@ -51,19 +50,18 @@ type groupRequest struct {
 	groupRequestDo groupRequestDo
 
 	ALL           field.Asterisk
-	ID            field.Int64
-	ReqID         field.String // 请求id
-	GroupID       field.String // 群id
-	ReqMsg        field.String // 请求信息
-	ReqTime       field.Time   // 请求时间
-	JoinSource    field.Int64  // 入群方式
-	InviterUserID field.String // 邀请人id
-	HandleUserID  field.String // 处理人id
-	HandleTime    field.Time   // 处理时间
-	HandleResult  field.Int64  // 处理结果
+	ID            field.Int64  // 自增主键
+	ReqID         field.Int64  // 申请人/被邀请人 uid
+	GroupID       field.Int64  // 群id
+	ReqMsg        field.String // 申请/邀请附言
+	JoinSource    field.Uint8  // 1=被邀请入群 2=主动申请
+	InviterUserID field.Int64  // 邀请人uid（join_source=1时有效）
+	HandleUserID  field.Int64  // 处理人uid（群管理员/群主）
+	HandleResult  field.Uint8  // 1=待处理 2=通过 3=拒绝 4=取消
+	HandledAt     field.Time   // 处理时间
 	CreatedAt     field.Time   // 创建时间
 	UpdatedAt     field.Time   // 更新时间
-	DeletedAt     field.Field  // 删除时间
+	DeletedAt     field.Field  // 删除时间（软删除）
 
 	fieldMap map[string]field.Expr
 }
@@ -81,15 +79,14 @@ func (g groupRequest) As(alias string) *groupRequest {
 func (g *groupRequest) updateTableName(table string) *groupRequest {
 	g.ALL = field.NewAsterisk(table)
 	g.ID = field.NewInt64(table, "id")
-	g.ReqID = field.NewString(table, "req_id")
-	g.GroupID = field.NewString(table, "group_id")
+	g.ReqID = field.NewInt64(table, "req_id")
+	g.GroupID = field.NewInt64(table, "group_id")
 	g.ReqMsg = field.NewString(table, "req_msg")
-	g.ReqTime = field.NewTime(table, "req_time")
-	g.JoinSource = field.NewInt64(table, "join_source")
-	g.InviterUserID = field.NewString(table, "inviter_user_id")
-	g.HandleUserID = field.NewString(table, "handle_user_id")
-	g.HandleTime = field.NewTime(table, "handle_time")
-	g.HandleResult = field.NewInt64(table, "handle_result")
+	g.JoinSource = field.NewUint8(table, "join_source")
+	g.InviterUserID = field.NewInt64(table, "inviter_user_id")
+	g.HandleUserID = field.NewInt64(table, "handle_user_id")
+	g.HandleResult = field.NewUint8(table, "handle_result")
+	g.HandledAt = field.NewTime(table, "handled_at")
 	g.CreatedAt = field.NewTime(table, "created_at")
 	g.UpdatedAt = field.NewTime(table, "updated_at")
 	g.DeletedAt = field.NewField(table, "deleted_at")
@@ -121,17 +118,16 @@ func (g *groupRequest) GetFieldByName(fieldName string) (field.OrderExpr, bool) 
 }
 
 func (g *groupRequest) fillFieldMap() {
-	g.fieldMap = make(map[string]field.Expr, 13)
+	g.fieldMap = make(map[string]field.Expr, 12)
 	g.fieldMap["id"] = g.ID
 	g.fieldMap["req_id"] = g.ReqID
 	g.fieldMap["group_id"] = g.GroupID
 	g.fieldMap["req_msg"] = g.ReqMsg
-	g.fieldMap["req_time"] = g.ReqTime
 	g.fieldMap["join_source"] = g.JoinSource
 	g.fieldMap["inviter_user_id"] = g.InviterUserID
 	g.fieldMap["handle_user_id"] = g.HandleUserID
-	g.fieldMap["handle_time"] = g.HandleTime
 	g.fieldMap["handle_result"] = g.HandleResult
+	g.fieldMap["handled_at"] = g.HandledAt
 	g.fieldMap["created_at"] = g.CreatedAt
 	g.fieldMap["updated_at"] = g.UpdatedAt
 	g.fieldMap["deleted_at"] = g.DeletedAt

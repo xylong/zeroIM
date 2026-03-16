@@ -28,7 +28,7 @@ func NewFriendListLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Friend
 
 func (l *FriendListLogic) FriendList(in *social.FriendListReq) (*social.FriendListResp, error) {
 	friends, err := l.svcCtx.Dao.Friend.WithContext(l.ctx).
-		Where(l.svcCtx.Dao.Friend.UserId.Eq(in.UserId)).
+		Where(l.svcCtx.Dao.Friend.UserID.Eq(in.UserId)).
 		Find()
 	if err != nil {
 		return nil, errors2.Wrapf(xerr.NewDBErr(), "list friend by uid err %v uid %v", err, in.UserId)

@@ -8,7 +8,6 @@ import (
 	"time"
 	"zeroIM/apps/social/models"
 	"zeroIM/apps/social/rpc/internal/dao"
-	"zeroIM/pkg/wuid"
 	"zeroIM/pkg/xerr"
 
 	"zeroIM/apps/social/rpc/internal/svc"
@@ -52,7 +51,6 @@ func (l *GroupCreateLogic) GroupCreate(in *social.GroupCreateReq) (*social.Group
 	// 2.建群
 	l.svcCtx.Dao.Transaction(func(tx *dao.Query) error {
 		var group = models.Group{
-			ID:         wuid.GenUid(l.svcCtx.Config.Mysql.DSN),
 			Name:       in.Name,
 			Icon:       in.Icon,
 			CreatorUID: in.CreatorUid,

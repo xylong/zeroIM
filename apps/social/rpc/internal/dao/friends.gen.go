@@ -28,11 +28,11 @@ func newFriend(db *gorm.DB, opts ...gen.DOOption) friend {
 
 	tableName := _friend.friendDo.TableName()
 	_friend.ALL = field.NewAsterisk(tableName)
-	_friend.Id = field.NewInt64(tableName, "id")
-	_friend.UserId = field.NewString(tableName, "user_id")
-	_friend.FriendUid = field.NewString(tableName, "friend_uid")
+	_friend.ID = field.NewInt64(tableName, "id")
+	_friend.UserID = field.NewInt64(tableName, "user_id")
+	_friend.FriendUID = field.NewInt64(tableName, "friend_uid")
 	_friend.Remark = field.NewString(tableName, "remark")
-	_friend.AddSource = field.NewInt64(tableName, "add_source")
+	_friend.AddSource = field.NewUint8(tableName, "add_source")
 	_friend.CreatedAt = field.NewTime(tableName, "created_at")
 	_friend.UpdatedAt = field.NewTime(tableName, "updated_at")
 	_friend.DeletedAt = field.NewField(tableName, "deleted_at")
@@ -46,14 +46,14 @@ type friend struct {
 	friendDo friendDo
 
 	ALL       field.Asterisk
-	Id        field.Int64
-	UserId    field.String // 用户id
-	FriendUid field.String // 好友用户id
-	Remark    field.String // 备注
-	AddSource field.Int64  // 添加渠道
-	CreatedAt field.Time   // 创建时间
-	UpdatedAt field.Time   // 删除时间
-	DeletedAt field.Field  // 删除时间
+	ID        field.Int64  // 自增主键
+	UserID    field.Int64  // 用户id
+	FriendUID field.Int64  // 好友uid
+	Remark    field.String // 备注（对好友的备注）
+	AddSource field.Uint8  // 添加方式：1搜索 2名片 3群聊 ...
+	CreatedAt field.Time   // 成为好友时间
+	UpdatedAt field.Time   // 记录更新时间
+	DeletedAt field.Field  // 删除/拉黑时间（软删除）
 
 	fieldMap map[string]field.Expr
 }
@@ -70,11 +70,11 @@ func (f friend) As(alias string) *friend {
 
 func (f *friend) updateTableName(table string) *friend {
 	f.ALL = field.NewAsterisk(table)
-	f.Id = field.NewInt64(table, "id")
-	f.UserId = field.NewString(table, "user_id")
-	f.FriendUid = field.NewString(table, "friend_uid")
+	f.ID = field.NewInt64(table, "id")
+	f.UserID = field.NewInt64(table, "user_id")
+	f.FriendUID = field.NewInt64(table, "friend_uid")
 	f.Remark = field.NewString(table, "remark")
-	f.AddSource = field.NewInt64(table, "add_source")
+	f.AddSource = field.NewUint8(table, "add_source")
 	f.CreatedAt = field.NewTime(table, "created_at")
 	f.UpdatedAt = field.NewTime(table, "updated_at")
 	f.DeletedAt = field.NewField(table, "deleted_at")
@@ -103,9 +103,9 @@ func (f *friend) GetFieldByName(fieldName string) (field.OrderExpr, bool) {
 
 func (f *friend) fillFieldMap() {
 	f.fieldMap = make(map[string]field.Expr, 8)
-	f.fieldMap["id"] = f.Id
-	f.fieldMap["user_id"] = f.UserId
-	f.fieldMap["friend_uid"] = f.FriendUid
+	f.fieldMap["id"] = f.ID
+	f.fieldMap["user_id"] = f.UserID
+	f.fieldMap["friend_uid"] = f.FriendUID
 	f.fieldMap["remark"] = f.Remark
 	f.fieldMap["add_source"] = f.AddSource
 	f.fieldMap["created_at"] = f.CreatedAt

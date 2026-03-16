@@ -28,14 +28,12 @@ func newFriendRequest(db *gorm.DB, opts ...gen.DOOption) friendRequest {
 
 	tableName := _friendRequest.friendRequestDo.TableName()
 	_friendRequest.ALL = field.NewAsterisk(tableName)
-	_friendRequest.Id = field.NewInt64(tableName, "id")
-	_friendRequest.UserId = field.NewString(tableName, "user_id")
-	_friendRequest.ReqUid = field.NewString(tableName, "req_uid")
+	_friendRequest.ID = field.NewInt64(tableName, "id")
+	_friendRequest.UserID = field.NewInt64(tableName, "user_id")
+	_friendRequest.ReqUID = field.NewInt64(tableName, "req_uid")
 	_friendRequest.ReqMsg = field.NewString(tableName, "req_msg")
-	_friendRequest.ReqTime = field.NewTime(tableName, "req_time")
-	_friendRequest.HandleResult = field.NewInt64(tableName, "handle_result")
+	_friendRequest.HandleResult = field.NewUint8(tableName, "handle_result")
 	_friendRequest.HandleMsg = field.NewString(tableName, "handle_msg")
-	_friendRequest.HandledAt = field.NewTime(tableName, "handled_at")
 	_friendRequest.CreatedAt = field.NewTime(tableName, "created_at")
 	_friendRequest.UpdatedAt = field.NewTime(tableName, "updated_at")
 	_friendRequest.DeletedAt = field.NewField(tableName, "deleted_at")
@@ -49,17 +47,15 @@ type friendRequest struct {
 	friendRequestDo friendRequestDo
 
 	ALL          field.Asterisk
-	Id           field.Int64
-	UserId       field.String // 用户id
-	ReqUid       field.String // 申请好友id
-	ReqMsg       field.String // 请求信息
-	ReqTime      field.Time   // 请求时间
-	HandleResult field.Int64  // 处理结果
-	HandleMsg    field.String // 处理结果信息
-	HandledAt    field.Time   // 处理时间
-	CreatedAt    field.Time   // 创建时间
-	UpdatedAt    field.Time   // 更新时间
-	DeletedAt    field.Field  // 删除时间
+	ID           field.Int64  // 自增主键
+	UserID       field.Int64  // 发起申请的用户id
+	ReqUID       field.Int64  // 被申请的好友uid（目标用户）
+	ReqMsg       field.String // 申请附言/验证消息
+	HandleResult field.Uint8  // 0=待处理 1=通过 2=拒绝 3=申请人取消
+	HandleMsg    field.String // 处理时的回复/拒绝理由
+	CreatedAt    field.Time   // 申请创建时间
+	UpdatedAt    field.Time   // 记录更新时间
+	DeletedAt    field.Field  // 软删除时间
 
 	fieldMap map[string]field.Expr
 }
@@ -76,14 +72,12 @@ func (f friendRequest) As(alias string) *friendRequest {
 
 func (f *friendRequest) updateTableName(table string) *friendRequest {
 	f.ALL = field.NewAsterisk(table)
-	f.Id = field.NewInt64(table, "id")
-	f.UserId = field.NewString(table, "user_id")
-	f.ReqUid = field.NewString(table, "req_uid")
+	f.ID = field.NewInt64(table, "id")
+	f.UserID = field.NewInt64(table, "user_id")
+	f.ReqUID = field.NewInt64(table, "req_uid")
 	f.ReqMsg = field.NewString(table, "req_msg")
-	f.ReqTime = field.NewTime(table, "req_time")
-	f.HandleResult = field.NewInt64(table, "handle_result")
+	f.HandleResult = field.NewUint8(table, "handle_result")
 	f.HandleMsg = field.NewString(table, "handle_msg")
-	f.HandledAt = field.NewTime(table, "handled_at")
 	f.CreatedAt = field.NewTime(table, "created_at")
 	f.UpdatedAt = field.NewTime(table, "updated_at")
 	f.DeletedAt = field.NewField(table, "deleted_at")
@@ -115,15 +109,13 @@ func (f *friendRequest) GetFieldByName(fieldName string) (field.OrderExpr, bool)
 }
 
 func (f *friendRequest) fillFieldMap() {
-	f.fieldMap = make(map[string]field.Expr, 11)
-	f.fieldMap["id"] = f.Id
-	f.fieldMap["user_id"] = f.UserId
-	f.fieldMap["req_uid"] = f.ReqUid
+	f.fieldMap = make(map[string]field.Expr, 9)
+	f.fieldMap["id"] = f.ID
+	f.fieldMap["user_id"] = f.UserID
+	f.fieldMap["req_uid"] = f.ReqUID
 	f.fieldMap["req_msg"] = f.ReqMsg
-	f.fieldMap["req_time"] = f.ReqTime
 	f.fieldMap["handle_result"] = f.HandleResult
 	f.fieldMap["handle_msg"] = f.HandleMsg
-	f.fieldMap["handled_at"] = f.HandledAt
 	f.fieldMap["created_at"] = f.CreatedAt
 	f.fieldMap["updated_at"] = f.UpdatedAt
 	f.fieldMap["deleted_at"] = f.DeletedAt

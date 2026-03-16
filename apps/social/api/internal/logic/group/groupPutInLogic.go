@@ -27,7 +27,7 @@ func NewGroupPutInLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GroupP
 }
 
 func (l *GroupPutInLogic) GroupPutIn(req *types.GroupPutInReq) (*types.GroupPutInResp, error) {
-	uid := ctxdata.GetUId(l.ctx)
+	uid := ctxdata.GetUIdStr(l.ctx)
 	_, err := l.svcCtx.Social.GroupPutin(l.ctx, &socialClient.GroupPutinReq{
 		GroupId:    req.GroupId,
 		ReqId:      uid,

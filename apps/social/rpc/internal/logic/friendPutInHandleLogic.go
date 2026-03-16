@@ -39,8 +39,8 @@ func NewFriendPutInHandleLogic(ctx context.Context, svcCtx *svc.ServiceContext) 
 func (l *FriendPutInHandleLogic) FriendPutInHandle(in *social.FriendPutInHandleReq) (*social.FriendPutInHandleResp, error) {
 	// 1.获取申请记录
 	friendReq, err := l.svcCtx.Dao.FriendRequest.WithContext(l.ctx).Debug().
-		Where(l.svcCtx.Dao.FriendRequest.Id.Eq(int64(in.FriendReqId))).
-		Where(l.svcCtx.Dao.FriendRequest.UserId.Eq(in.UserId)).
+		Where(l.svcCtx.Dao.FriendRequest.ID.Eq(in.FriendReqId)).
+		Where(l.svcCtx.Dao.FriendRequest.UserID.Eq(in.UserId)).
 		First()
 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, errors2.Wrapf(xerr.NewDBErr(), "get friendRequest by friendReqid err %v req %v", err, in.FriendReqId)
@@ -62,7 +62,7 @@ func (l *FriendPutInHandleLogic) FriendPutInHandle(in *social.FriendPutInHandleR
 	// 3.处理入库
 	err = l.svcCtx.Dao.Transaction(func(tx *dao.Query) error {
 		if _, err := tx.FriendRequest.WithContext(l.ctx).
-			Where(tx.FriendRequest.Id.Eq(int64(in.FriendReqId))).
+			Where(tx.FriendRequest.ID.Eq(int64(in.FriendReqId))).
 			Update(tx.FriendRequest.HandleResult, in.HandleResult); err != nil {
 			return errors2.Wrapf(xerr.NewDBErr(), "update friendRequest err %v req %v", err, in)
 		}

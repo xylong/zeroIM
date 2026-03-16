@@ -7,7 +7,7 @@ import (
 
 // User 用户
 type User struct {
-	ID        string         `gorm:"column:id;type:varchar(24);primaryKey" json:"id"`
+	ID        int64          `gorm:"primaryKey;autoIncrement;column:id" json:"id"`
 	Avatar    string         `gorm:"column:avatar;type:varchar(191);not null;default:'';comment:头像" json:"avatar"`
 	Nickname  string         `gorm:"column:nickname;type:varchar(24);not null;default:'';comment:昵称" json:"nickname"`
 	Phone     string         `gorm:"column:phone;type:varchar(20);not null;uniqueIndex:uk_phone;comment:手机号" json:"phone"`

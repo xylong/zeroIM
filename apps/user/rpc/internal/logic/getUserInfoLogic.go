@@ -3,6 +3,7 @@ package logic
 import (
 	"context"
 	"encoding/json"
+	"strconv"
 	"time"
 	"zeroIM/apps/user/models"
 	"zeroIM/pkg/xerr"
@@ -19,7 +20,7 @@ import (
 
 var (
 	ErrInvalidId    = xerr.New(xerr.RequestParamError, "id错误")
-	ErrUserNotExist = xerr.New(xerr.ServerCommonError, "用户不存在")
+	ErrUserNotExist = xerr.NewCodeErr(xerr.UserNotExist)
 
 	cacheKeyPrefix = "user:info:"
 	cacheTTL       = time.Minute * 10
@@ -46,9 +47,9 @@ func (l *GetUserInfoLogic) GetUserInfo(in *user.GetUserInfoReq) (*user.GetUserIn
 	if err := l.validateRequest(in); err != nil {
 		return nil, err
 	}
-
 	// 2. 使用 SingleFlight 防止缓存击穿
-	result, err := l.svcCtx.UserInfoSF.Do(in.Id, func() (interface{}, error) {
+	key := l.getCacheKey(in.Id)
+	result, err := l.svcCtx.UserInfoSF.Do(key, func() (interface{}, error) {
 		return l.getUserInfoInternal(in.Id)
 	})
 	if err != nil {
@@ -60,13 +61,13 @@ func (l *GetUserInfoLogic) GetUserInfo(in *user.GetUserInfoReq) (*user.GetUserIn
 
 // 参数校验
 func (l *GetUserInfoLogic) validateRequest(in *user.GetUserInfoReq) error {
-	if in == nil || in.Id == "" {
+	if in == nil || in.Id <= 0 {
 		return errors.WithStack(ErrInvalidId)
 	}
 	return nil
 }
 
-func (l *GetUserInfoLogic) getUserInfoInternal(uid string) (*user.GetUserInfoResp, error) {
+func (l *GetUserInfoLogic) getUserInfoInternal(uid int64) (*user.GetUserInfoResp, error) {
 	// 1.从缓存获取
 	if u, hit, err := l.getUserFromCache(uid); err == nil && hit {
 		if u == nil {
@@ -92,12 +93,16 @@ func (l *GetUserInfoLogic) getUserInfoInternal(uid string) (*user.GetUserInfoRes
 	}, nil
 }
 
-func (l *GetUserInfoLogic) getUserFromCache(uid string) (*user.UserEntity, bool, error) {
+func (l *GetUserInfoLogic) getCacheKey(uid int64) string {
+	return cacheKeyPrefix + strconv.Itoa(int(uid))
+}
+
+func (l *GetUserInfoLogic) getUserFromCache(uid int64) (*user.UserEntity, bool, error) {
 	if l.svcCtx.Rdb == nil {
 		return nil, false, nil
 	}
 
-	key := cacheKeyPrefix + uid
+	key := l.getCacheKey(uid)
 	val, err := l.svcCtx.Rdb.Get(l.ctx, key).Result()
 	if err != nil {
 		if errors.Is(err, redis.Nil) {
@@ -120,14 +125,15 @@ func (l *GetUserInfoLogic) getUserFromCache(uid string) (*user.UserEntity, bool,
 	return &u, true, nil
 }
 
-func (l *GetUserInfoLogic) getUserFromDB(uid string) (*models.User, error) {
+func (l *GetUserInfoLogic) getUserFromDB(uid int64) (*models.User, error) {
+	uidStr := strconv.Itoa(int(uid))
 	userEntity, err := l.svcCtx.Dao.WithContext(l.ctx).User.Debug().
-		Where(l.svcCtx.Dao.User.ID.Eq(uid)).
+		Where(l.svcCtx.Dao.User.ID.Eq(uidStr)).
 		First()
 
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			l.cacheNilValue(uid)
+			l.cacheNilValue(uidStr)
 			return nil, ErrUserNotExist
 		}
 
@@ -141,7 +147,7 @@ func (l *GetUserInfoLogic) getUserFromDB(uid string) (*models.User, error) {
 	return userEntity, nil
 }
 
-func (l *GetUserInfoLogic) setUserCacheAsync(uid string, u *user.UserEntity) {
+func (l *GetUserInfoLogic) setUserCacheAsync(uid int64, u *user.UserEntity) {
 	if l.svcCtx.Rdb == nil {
 		return
 	}
@@ -150,7 +156,7 @@ func (l *GetUserInfoLogic) setUserCacheAsync(uid string, u *user.UserEntity) {
 		b, _ := json.Marshal(u)
 		_ = l.svcCtx.Rdb.Set(
 			context.Background(),
-			cacheKeyPrefix+uid,
+			cacheKeyPrefix+strconv.Itoa(int(uid)),
 			b,
 			cacheTTL,
 		).Err()

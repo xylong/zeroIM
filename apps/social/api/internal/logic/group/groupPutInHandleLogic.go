@@ -39,7 +39,7 @@ func (l *GroupPutInHandleLogic) GroupPutInHandle(req *types.GroupPutInHandleReq)
 		return nil, errors.WithStack(xerr.NewReqParamErr())
 	}
 
-	uid := ctxdata.GetUId(l.ctx)
+	uid := ctxdata.GetUIdStr(l.ctx)
 	_, err := l.svcCtx.Social.GroupPutInHandle(l.ctx, &socialClient.GroupPutInHandleReq{
 		GroupId:      req.GroupId,
 		GroupReqId:   req.GroupReqId,

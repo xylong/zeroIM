@@ -29,6 +29,7 @@ func NewDetailLogic(ctx context.Context, svcCtx *svc.ServiceContext) *DetailLogi
 
 func (l *DetailLogic) Detail(req *types.UserInfoReq) (*types.UserInfoResp, error) {
 	uid := ctxdata.GetUId(l.ctx)
+	l.Infof("detail logic uid: %v", uid)
 
 	userInfo, err := l.svcCtx.GetUserInfo(l.ctx, &userClient.GetUserInfoReq{Id: uid})
 	if err != nil {

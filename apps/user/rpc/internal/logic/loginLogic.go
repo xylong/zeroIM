@@ -18,8 +18,8 @@ import (
 )
 
 var (
-	ErrPhoneNotRegister      = xerr.New(xerr.ServerCommonError, "手机号未注册")
-	ErrUserPwdError          = xerr.New(xerr.ServerCommonError, "密码错误")
+	ErrPhoneNotRegister      = xerr.NewCodeErr(xerr.UserPhoneNotRegister)
+	ErrUserPwdError          = xerr.NewCodeErr(xerr.UserPasswordError)
 	ErrInvalidPasswordLength = xerr.New(xerr.RequestParamError, "密码长度错误")
 	ErrInvalidPhone          = xerr.New(xerr.RequestParamError, "手机号格式错误")
 )

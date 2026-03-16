@@ -59,10 +59,10 @@ func (l *FriendPutInLogic) FriendPutIn(in *social.FriendPutInReq) (*social.Frien
 	return &social.FriendPutInResp{}, nil
 }
 
-func (l *FriendPutInLogic) FindByUidAndFid(uid, fid string) (*models.Friend, error) {
+func (l *FriendPutInLogic) FindByUidAndFid(uid, fid int64) (*models.Friend, error) {
 	result, err := l.svcCtx.Dao.Friend.WithContext(l.ctx).
-		Where(l.svcCtx.Dao.Friend.UserId.Eq(uid)).
-		Where(l.svcCtx.Dao.Friend.FriendUid.Eq(fid)).
+		Where(l.svcCtx.Dao.Friend.UserID.Eq(uid)).
+		Where(l.svcCtx.Dao.Friend.FriendUID.Eq(fid)).
 		First()
 	if err != nil {
 		return nil, err
@@ -71,10 +71,10 @@ func (l *FriendPutInLogic) FindByUidAndFid(uid, fid string) (*models.Friend, err
 	return result, nil
 }
 
-func (l *FriendPutInLogic) FindByReqUidAndUserid(reqUid, userId string) (*models.FriendRequest, error) {
+func (l *FriendPutInLogic) FindByReqUidAndUserid(reqUid, userId int64) (*models.FriendRequest, error) {
 	result, err := l.svcCtx.Dao.FriendRequest.WithContext(l.ctx).
-		Where(l.svcCtx.Dao.FriendRequest.ReqUid.Eq(reqUid)).
-		Where(l.svcCtx.Dao.FriendRequest.UserId.Eq(userId)).
+		Where(l.svcCtx.Dao.FriendRequest.ReqUID.Eq(reqUid)).
+		Where(l.svcCtx.Dao.FriendRequest.UserID.Eq(userId)).
 		First()
 	if err != nil {
 		return nil, err

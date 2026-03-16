@@ -29,13 +29,14 @@ func newGroupMember(db *gorm.DB, opts ...gen.DOOption) groupMember {
 	tableName := _groupMember.groupMemberDo.TableName()
 	_groupMember.ALL = field.NewAsterisk(tableName)
 	_groupMember.ID = field.NewInt64(tableName, "id")
-	_groupMember.GroupID = field.NewString(tableName, "group_id")
-	_groupMember.UserID = field.NewString(tableName, "user_id")
-	_groupMember.RoleLevel = field.NewInt64(tableName, "role_level")
+	_groupMember.GroupID = field.NewInt64(tableName, "group_id")
+	_groupMember.UserID = field.NewInt64(tableName, "user_id")
+	_groupMember.RoleLevel = field.NewUint8(tableName, "role_level")
 	_groupMember.JoinTime = field.NewTime(tableName, "join_time")
-	_groupMember.JoinSource = field.NewInt64(tableName, "join_source")
-	_groupMember.InviterUID = field.NewString(tableName, "inviter_uid")
-	_groupMember.OperatorUID = field.NewString(tableName, "operator_uid")
+	_groupMember.JoinSource = field.NewUint8(tableName, "join_source")
+	_groupMember.InviterUID = field.NewInt64(tableName, "inviter_uid")
+	_groupMember.LastOperatorUID = field.NewInt64(tableName, "last_operator_uid")
+	_groupMember.Status = field.NewInt8(tableName, "status")
 	_groupMember.CreatedAt = field.NewTime(tableName, "created_at")
 	_groupMember.UpdatedAt = field.NewTime(tableName, "updated_at")
 	_groupMember.DeletedAt = field.NewField(tableName, "deleted_at")
@@ -48,18 +49,19 @@ func newGroupMember(db *gorm.DB, opts ...gen.DOOption) groupMember {
 type groupMember struct {
 	groupMemberDo groupMemberDo
 
-	ALL         field.Asterisk
-	ID          field.Int64
-	GroupID     field.String // 群id
-	UserID      field.String // 用户id
-	RoleLevel   field.Int64  // 角色等级
-	JoinTime    field.Time   // 加入时间
-	JoinSource  field.Int64  // 加入方式
-	InviterUID  field.String // 邀请人id
-	OperatorUID field.String // 操作人id
-	CreatedAt   field.Time   // 创建时间
-	UpdatedAt   field.Time   // 更新时间
-	DeletedAt   field.Field  // 删除时间
+	ALL             field.Asterisk
+	ID              field.Int64 // 自增主键
+	GroupID         field.Int64 // 群id
+	UserID          field.Int64 // 用户uid
+	RoleLevel       field.Uint8 // 0普通成员，10管理员，20群主
+	JoinTime        field.Time  // 入群时间
+	JoinSource      field.Uint8 // 1=被邀请 2=主动申请通过
+	InviterUID      field.Int64 // 邀请人uid（join_source=1时有效）
+	LastOperatorUID field.Int64 // 最后操作人uid（添加/修改/移除）
+	Status          field.Int8  // 1正常，2禁言，3被踢
+	CreatedAt       field.Time  // 记录创建时间
+	UpdatedAt       field.Time  // 记录更新时间
+	DeletedAt       field.Field // 退出/被踢时间（软删除）
 
 	fieldMap map[string]field.Expr
 }
@@ -77,13 +79,14 @@ func (g groupMember) As(alias string) *groupMember {
 func (g *groupMember) updateTableName(table string) *groupMember {
 	g.ALL = field.NewAsterisk(table)
 	g.ID = field.NewInt64(table, "id")
-	g.GroupID = field.NewString(table, "group_id")
-	g.UserID = field.NewString(table, "user_id")
-	g.RoleLevel = field.NewInt64(table, "role_level")
+	g.GroupID = field.NewInt64(table, "group_id")
+	g.UserID = field.NewInt64(table, "user_id")
+	g.RoleLevel = field.NewUint8(table, "role_level")
 	g.JoinTime = field.NewTime(table, "join_time")
-	g.JoinSource = field.NewInt64(table, "join_source")
-	g.InviterUID = field.NewString(table, "inviter_uid")
-	g.OperatorUID = field.NewString(table, "operator_uid")
+	g.JoinSource = field.NewUint8(table, "join_source")
+	g.InviterUID = field.NewInt64(table, "inviter_uid")
+	g.LastOperatorUID = field.NewInt64(table, "last_operator_uid")
+	g.Status = field.NewInt8(table, "status")
 	g.CreatedAt = field.NewTime(table, "created_at")
 	g.UpdatedAt = field.NewTime(table, "updated_at")
 	g.DeletedAt = field.NewField(table, "deleted_at")
@@ -113,7 +116,7 @@ func (g *groupMember) GetFieldByName(fieldName string) (field.OrderExpr, bool) {
 }
 
 func (g *groupMember) fillFieldMap() {
-	g.fieldMap = make(map[string]field.Expr, 11)
+	g.fieldMap = make(map[string]field.Expr, 12)
 	g.fieldMap["id"] = g.ID
 	g.fieldMap["group_id"] = g.GroupID
 	g.fieldMap["user_id"] = g.UserID
@@ -121,7 +124,8 @@ func (g *groupMember) fillFieldMap() {
 	g.fieldMap["join_time"] = g.JoinTime
 	g.fieldMap["join_source"] = g.JoinSource
 	g.fieldMap["inviter_uid"] = g.InviterUID
-	g.fieldMap["operator_uid"] = g.OperatorUID
+	g.fieldMap["last_operator_uid"] = g.LastOperatorUID
+	g.fieldMap["status"] = g.Status
 	g.fieldMap["created_at"] = g.CreatedAt
 	g.fieldMap["updated_at"] = g.UpdatedAt
 	g.fieldMap["deleted_at"] = g.DeletedAt

@@ -1,5 +1,5 @@
 CREATE TABLE `users` (
-                         `id` varchar(24) COLLATE utf8mb4_unicode_ci NOT NULL,
+                         `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
                          `avatar` varchar(191) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '' COMMENT '头像',
                          `nickname` varchar(24) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '' COMMENT '昵称',
                          `phone` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '' COMMENT '手机号',

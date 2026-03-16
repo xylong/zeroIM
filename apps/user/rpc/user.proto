@@ -6,7 +6,7 @@ option go_package = "./user";
 
 // model
 message UserEntity {
-  string  id = 1;                // 用户id
+  int64  id = 1;                // 用户id
   string  avatar = 2;            // 用户头像
   string  nickname = 3;          // 昵称
   string  phone  = 4;            // 手机号码
@@ -47,7 +47,7 @@ message RegisterResp {
 }
 
 message GetUserInfoReq {
-  string id = 1;
+  int64 id = 1;
 }
 
 message GetUserInfoResp {

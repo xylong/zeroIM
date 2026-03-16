@@ -12,14 +12,10 @@ import (
 	"zeroIM/pkg/ctxdata"
 	"zeroIM/pkg/encrypt"
 	"zeroIM/pkg/logutil"
-	"zeroIM/pkg/wuid"
+	"zeroIM/pkg/xerr"
 
 	"github.com/zeromicro/go-zero/core/logx"
 	"gorm.io/gorm"
-)
-
-var (
-	ErrPhoneIsRegister = errors.New("手机号已注册")
 )
 
 type RegisterLogic struct {
@@ -41,7 +37,7 @@ func (l *RegisterLogic) Register(in *user.RegisterReq) (*user.RegisterResp, erro
 	userModel := l.svcCtx.Dao.User
 	_, err := userModel.WithContext(l.ctx).Where(userModel.Phone.Eq(in.Phone)).First()
 	if err == nil {
-		return nil, ErrPhoneIsRegister
+		return nil, xerr.NewCodeErr(xerr.UserPhoneIsRegister)
 	}
 	if !errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, err
@@ -70,7 +66,6 @@ func (l *RegisterLogic) Register(in *user.RegisterReq) (*user.RegisterResp, erro
 	)
 
 	userEntity := &models.User{
-		ID:       wuid.GenUid(l.svcCtx.Config.Mysql.DSN),
 		Avatar:   avatar,
 		Nickname: nickname,
 		Phone:    in.Phone,

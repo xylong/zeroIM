@@ -5,18 +5,17 @@ import (
 	"time"
 )
 
-// FriendRequest 好友申请表
+// FriendRequest 好友申请记录表（单向申请）
 type FriendRequest struct {
-	ID           uint           `gorm:"column:id;primaryKey;autoIncrement" json:"id"`
-	UserID       string         `gorm:"column:user_id;type:varchar(64);not null;index:idx_user_id_created_at,priority:1;comment:用户id" json:"user_id"`
-	ReqUID       string         `gorm:"column:req_uid;type:varchar(64);not null;index:idx_req_uid_created_at,priority:1;comment:申请好友id" json:"req_uid"`
-	ReqMsg       string         `gorm:"column:req_msg;type:varchar(255);not null;default:'';comment:请求信息" json:"req_msg"`
-	HandleResult int8           `gorm:"column:handle_result;type:tinyint;not null;default:1;comment:处理结果：1-未处理 2-通过 3-拒绝 4-取消" json:"handle_result"`
-	HandleMsg    string         `gorm:"column:handle_msg;type:varchar(255);not null;default:'';comment:处理结果信息" json:"handle_msg"`
-	HandledAt    *time.Time     `gorm:"column:handled_at;type:timestamp;comment:处理时间" json:"handled_at,omitempty"`
-	CreatedAt    time.Time      `gorm:"column:created_at;type:timestamp;not null;index:idx_user_id_created_at,priority:2;index:idx_req_uid_created_at,priority:2" json:"created_at"`
-	UpdatedAt    time.Time      `gorm:"column:updated_at;type:timestamp;not null" json:"updated_at"`
-	DeletedAt    gorm.DeletedAt `gorm:"column:deleted_at;index" json:"-"`
+	ID           int64          `gorm:"column:id;primaryKey;type:int unsigned;autoIncrement;comment:自增主键"`
+	UserID       int64          `gorm:"column:user_id;type:int unsigned;not null;uniqueIndex:uk_user_target,priority:1;index:idx_user_created,priority:1;comment:发起申请的用户id"`
+	ReqUID       int64          `gorm:"column:req_uid;type:int unsigned;not null;uniqueIndex:uk_user_target,priority:2;index:idx_target_status_time,priority:1;comment:被申请的好友uid（目标用户）"`
+	ReqMsg       string         `gorm:"column:req_msg;type:varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;not null;default:'';comment:申请附言/验证消息"`
+	HandleResult uint8          `gorm:"column:handle_result;type:tinyint unsigned;not null;default:0;index:idx_target_status_time,priority:2;comment:0=待处理 1=通过 2=拒绝 3=申请人取消"`
+	HandleMsg    string         `gorm:"column:handle_msg;type:varchar(512) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;not null;default:'';comment:处理时的回复/拒绝理由"`
+	CreatedAt    time.Time      `gorm:"column:created_at;autoCreateTime;comment:申请创建时间"`
+	UpdatedAt    time.Time      `gorm:"column:updated_at;autoUpdateTime;comment:记录更新时间"`
+	DeletedAt    gorm.DeletedAt `gorm:"column:deleted_at;index;comment:软删除时间"`
 }
 
 // TableName FriendRequest's table name

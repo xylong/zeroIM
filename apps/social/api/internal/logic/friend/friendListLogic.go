@@ -31,7 +31,7 @@ func NewFriendListLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Friend
 
 func (l *FriendListLogic) FriendList(req *types.FriendListReq) (*types.FriendListResp, error) {
 	// 获取好友
-	friends, err := l.svcCtx.Social.FriendList(l.ctx, &socialClient.FriendListReq{UserId: ctxdata.GetUId(l.ctx)})
+	friends, err := l.svcCtx.Social.FriendList(l.ctx, &socialClient.FriendListReq{UserId: ctxdata.GetUIdStr(l.ctx)})
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}

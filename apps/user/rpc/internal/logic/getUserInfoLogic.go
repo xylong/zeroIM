@@ -3,6 +3,7 @@ package logic
 import (
 	"context"
 	"encoding/json"
+	"github.com/spf13/cast"
 	"strconv"
 	"time"
 	"zeroIM/apps/user/models"
@@ -126,14 +127,13 @@ func (l *GetUserInfoLogic) getUserFromCache(uid int64) (*user.UserEntity, bool, 
 }
 
 func (l *GetUserInfoLogic) getUserFromDB(uid int64) (*models.User, error) {
-	uidStr := strconv.Itoa(int(uid))
 	userEntity, err := l.svcCtx.Dao.WithContext(l.ctx).User.Debug().
-		Where(l.svcCtx.Dao.User.ID.Eq(uidStr)).
+		Where(l.svcCtx.Dao.User.ID.Eq(uid)).
 		First()
 
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			l.cacheNilValue(uidStr)
+			l.cacheNilValue(uid)
 			return nil, ErrUserNotExist
 		}
 
@@ -163,15 +163,17 @@ func (l *GetUserInfoLogic) setUserCacheAsync(uid int64, u *user.UserEntity) {
 	}()
 }
 
-func (l *GetUserInfoLogic) cacheNilValue(uid string) {
+func (l *GetUserInfoLogic) cacheNilValue(uid int64) {
 	if l.svcCtx.Rdb == nil {
 		return
 	}
 
 	go func() {
+		key := cacheKeyPrefix + cast.ToString(uid)
+
 		_ = l.svcCtx.Rdb.Set(
 			context.Background(),
-			cacheKeyPrefix+uid,
+			key,
 			cacheNilValue,
 			cacheNilTTL,
 		).Err()

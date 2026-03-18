@@ -57,7 +57,7 @@ message GetUserInfoResp {
 message FindUserReq {
   string name = 1;
   string phone = 2;
-  repeated string ids = 3;
+  repeated int64 ids = 3;
 }
 
 message FindUserResp {

@@ -18,8 +18,7 @@ message FriendRequests {
   int64 userId = 2;
   int64 reqUid = 3;
   string reqMsg = 4;
-  int64  reqTime = 5;
-  int32  handleResult = 6; // 处理结果
+  int32  handleResult = 5; // 处理结果
 }
 
 message Groups {

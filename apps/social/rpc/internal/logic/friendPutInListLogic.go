@@ -53,7 +53,6 @@ func (l *FriendPutInListLogic) toList(reqs []*models.FriendRequest) []*social.Fr
 			UserId:       req.UserID,
 			ReqUid:       req.ReqUID,
 			ReqMsg:       req.ReqMsg,
-			ReqTime:      req.CreatedAt.Unix(),
 			HandleResult: int32(req.HandleResult),
 		})
 	}

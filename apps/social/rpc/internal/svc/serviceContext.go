@@ -1,25 +1,28 @@
 package svc
 
 import (
+	"log"
+	"os"
+	"time"
+	"zeroIM/apps/social/rpc/internal/config"
+	"zeroIM/apps/social/rpc/internal/dao"
+	"zeroIM/pkg/cachex"
+
 	"github.com/redis/go-redis/v9"
 	"github.com/zeromicro/go-zero/core/service"
 	"github.com/zeromicro/go-zero/core/syncx"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
-	"log"
-	"os"
-	"time"
-	"zeroIM/apps/social/rpc/internal/config"
-	"zeroIM/apps/social/rpc/internal/dao"
 )
 
 type ServiceContext struct {
 	Config config.Config
 
-	DB  *gorm.DB
-	Dao *dao.Query
-	Rdb *redis.Client
+	DB    *gorm.DB
+	Dao   *dao.Query
+	Rdb   *redis.Client
+	Cache *cachex.Cache
 
 	SocialInfoSF syncx.SingleFlight // 全局共享
 }
@@ -60,6 +63,7 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		DB:           db,
 		Dao:          dao.Use(db),
 		Rdb:          rdb,
+		Cache:        cachex.NewCache(rdb),
 		SocialInfoSF: syncx.NewSingleFlight(),
 	}
 }

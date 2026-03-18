@@ -2,16 +2,29 @@ package logic
 
 import (
 	"context"
+	"fmt"
+	"time"
+
 	"errors"
+	"zeroIM/apps/social/models"
+	"zeroIM/pkg/cachex"
+	"zeroIM/pkg/xerr"
+
 	errors2 "github.com/pkg/errors"
 	"gorm.io/gorm"
-	"zeroIM/apps/social/models"
-	"zeroIM/pkg/xerr"
 
 	"zeroIM/apps/social/rpc/internal/svc"
 	"zeroIM/apps/social/rpc/social"
 
 	"github.com/zeromicro/go-zero/core/logx"
+)
+
+const (
+	cacheFriendPrefix        = "social:friend:"
+	cacheFriendRequestPrefix = "social:friend_req:"
+	cacheTTL                 = time.Minute * 30
+	cacheNilTTL              = time.Second * 30
+	cacheRandomTTL           = time.Second * 300
 )
 
 type FriendPutInLogic struct {
@@ -30,16 +43,16 @@ func NewFriendPutInLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Frien
 
 func (l *FriendPutInLogic) FriendPutIn(in *social.FriendPutInReq) (*social.FriendPutInResp, error) {
 	// 1.是否已是好友
-	friends, err := l.FindByUidAndFid(in.UserId, in.ReqUid)
+	friends, err := l.getFriendWithCache(in.UserId, in.ReqUid)
 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, errors2.Wrapf(xerr.NewDBErr(), "find friend err %v req %v", err, in)
 	}
 	if friends != nil {
-		return &social.FriendPutInResp{}, errors2.Wrap(xerr.NewMsgErr("已是好友关系"), "")
+		return nil, xerr.NewMsgErr("已是好友")
 	}
 
 	// 2.是否有进行中或拒绝的申请
-	request, err := l.FindByReqUidAndUserid(in.ReqUid, in.UserId)
+	request, err := l.getFriendRequestWithCache(in.ReqUid, in.UserId)
 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, errors2.Wrapf(xerr.NewDBErr(), "find friend request err %v req %v", err, in)
 	}
@@ -55,8 +68,46 @@ func (l *FriendPutInLogic) FriendPutIn(in *social.FriendPutInReq) (*social.Frien
 	if err != nil {
 		return nil, errors2.Wrapf(xerr.NewDBErr(), "create friendRequest err %v req %v", err, in)
 	}
+	// 4.删缓存
+	_ = l.svcCtx.Cache.Del(l.ctx, l.getFriendRequestCacheKey(in.ReqUid, in.UserId))
 
 	return &social.FriendPutInResp{}, nil
+}
+
+func (l *FriendPutInLogic) getFriendWithCache(uid, fid int64) (*models.Friend, error) {
+	key := l.getFriendCacheKey(uid, fid)
+
+	query := func() (*models.Friend, error) {
+		return l.FindByUidAndFid(uid, fid)
+	}
+
+	return cachex.GetWithCache(l.svcCtx.Cache, l.ctx, key, cachex.Options{
+		TTL:       cacheTTL,
+		NilTTL:    cacheNilTTL,
+		RandomTTL: cacheRandomTTL,
+	}, query)
+}
+
+func (l *FriendPutInLogic) getFriendRequestWithCache(reqUid, userId int64) (*models.FriendRequest, error) {
+	key := l.getFriendRequestCacheKey(reqUid, userId)
+
+	query := func() (*models.FriendRequest, error) {
+		return l.FindByReqUidAndUserid(reqUid, userId)
+	}
+
+	return cachex.GetWithCache(l.svcCtx.Cache, l.ctx, key, cachex.Options{
+		TTL:       cacheTTL,
+		NilTTL:    cacheNilTTL,
+		RandomTTL: cacheRandomTTL,
+	}, query)
+}
+
+func (l *FriendPutInLogic) getFriendCacheKey(uid, fid int64) string {
+	return fmt.Sprintf("%s%d:%d", cacheFriendPrefix, uid, fid)
+}
+
+func (l *FriendPutInLogic) getFriendRequestCacheKey(reqUid, userId int64) string {
+	return fmt.Sprintf("%s%d:%d", cacheFriendRequestPrefix, reqUid, userId)
 }
 
 func (l *FriendPutInLogic) FindByUidAndFid(uid, fid int64) (*models.Friend, error) {

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"time"
+	"zeroIM/pkg/constants"
 
 	"errors"
 	"zeroIM/apps/social/models"
@@ -44,19 +45,27 @@ func NewFriendPutInLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Frien
 func (l *FriendPutInLogic) FriendPutIn(in *social.FriendPutInReq) (*social.FriendPutInResp, error) {
 	// 1.是否已是好友
 	friends, err := l.getFriendWithCache(in.UserId, in.ReqUid)
-	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+	if err != nil && !errors.Is(err, cachex.ErrNotFound) {
 		return nil, errors2.Wrapf(xerr.NewDBErr(), "find friend err %v req %v", err, in)
 	}
 	if friends != nil {
 		return nil, xerr.NewMsgErr("已是好友")
 	}
 
-	// 2.是否有进行中或拒绝的申请
+	// 2.是否已有申请
 	request, err := l.getFriendRequestWithCache(in.ReqUid, in.UserId)
-	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+	if err != nil && !errors.Is(err, cachex.ErrNotFound) {
 		return nil, errors2.Wrapf(xerr.NewDBErr(), "find friend request err %v req %v", err, in)
 	}
 	if request != nil {
+		switch request.HandleResult {
+		case constants.NoHandlerResult.Uint8():
+			return nil, xerr.NewMsgErr("申请已存在")
+		case constants.RejectHandlerResult.Uint8():
+			return nil, xerr.NewMsgErr("申请已拒绝")
+		case constants.PassHandlerResult.Uint8():
+			return nil, xerr.NewMsgErr("申请已通过")
+		}
 		return &social.FriendPutInResp{}, errors2.Wrap(xerr.NewMsgErr("request already exist"), "")
 	}
 	// 3.入库
@@ -69,7 +78,7 @@ func (l *FriendPutInLogic) FriendPutIn(in *social.FriendPutInReq) (*social.Frien
 		return nil, errors2.Wrapf(xerr.NewDBErr(), "create friendRequest err %v req %v", err, in)
 	}
 	// 4.删缓存
-	_ = l.svcCtx.Cache.Del(l.ctx, l.getFriendRequestCacheKey(in.ReqUid, in.UserId))
+	_ = l.svcCtx.Cache.Del(l.getFriendRequestCacheKey(in.ReqUid, in.UserId))
 
 	return &social.FriendPutInResp{}, nil
 }
@@ -77,13 +86,12 @@ func (l *FriendPutInLogic) FriendPutIn(in *social.FriendPutInReq) (*social.Frien
 func (l *FriendPutInLogic) getFriendWithCache(uid, fid int64) (*models.Friend, error) {
 	key := l.getFriendCacheKey(uid, fid)
 
-	query := func() (*models.Friend, error) {
+	query := func(ctx context.Context) (*models.Friend, error) {
 		return l.FindByUidAndFid(uid, fid)
 	}
 
-	return cachex.GetWithCache(l.svcCtx.Cache, l.ctx, key, cachex.Options{
+	return cachex.GetWithCache(l.ctx, l.svcCtx.Cache, key, cachex.Options{
 		TTL:       cacheTTL,
-		NilTTL:    cacheNilTTL,
 		RandomTTL: cacheRandomTTL,
 	}, query)
 }
@@ -91,13 +99,12 @@ func (l *FriendPutInLogic) getFriendWithCache(uid, fid int64) (*models.Friend, e
 func (l *FriendPutInLogic) getFriendRequestWithCache(reqUid, userId int64) (*models.FriendRequest, error) {
 	key := l.getFriendRequestCacheKey(reqUid, userId)
 
-	query := func() (*models.FriendRequest, error) {
+	query := func(ctx context.Context) (*models.FriendRequest, error) {
 		return l.FindByReqUidAndUserid(reqUid, userId)
 	}
 
-	return cachex.GetWithCache(l.svcCtx.Cache, l.ctx, key, cachex.Options{
+	return cachex.GetWithCache(l.ctx, l.svcCtx.Cache, key, cachex.Options{
 		TTL:       cacheTTL,
-		NilTTL:    cacheNilTTL,
 		RandomTTL: cacheRandomTTL,
 	}, query)
 }
@@ -116,6 +123,9 @@ func (l *FriendPutInLogic) FindByUidAndFid(uid, fid int64) (*models.Friend, erro
 		Where(l.svcCtx.Dao.Friend.FriendUID.Eq(fid)).
 		First()
 	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, cachex.ErrNotFound
+		}
 		return nil, err
 	}
 
@@ -128,7 +138,9 @@ func (l *FriendPutInLogic) FindByReqUidAndUserid(reqUid, userId int64) (*models.
 		Where(l.svcCtx.Dao.FriendRequest.UserID.Eq(userId)).
 		First()
 	if err != nil {
-		return nil, err
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, cachex.ErrNotFound
+		}
 	}
 	return result, nil
 }

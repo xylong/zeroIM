@@ -4,114 +4,77 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+
+	"github.com/dtm-labs/rockscache"
 	"github.com/redis/go-redis/v9"
-	"golang.org/x/sync/singleflight"
-	"gorm.io/gorm"
-	"time"
 )
 
-type Cache struct {
-	rdb *redis.Client
-	sf  *singleflight.Group
+var ErrNotFound = errors.New("not found")
+
+type Wrapper[T any] struct {
+	Data *T `json:"data,omitempty"`
 }
 
-func NewCache(rdb *redis.Client) *Cache {
+type Cache struct {
+	rc *rockscache.Client
+}
+
+func NewCache(rdb redis.UniversalClient) *Cache {
 	return &Cache{
-		rdb: rdb,
-		sf:  &singleflight.Group{},
+		rc: rockscache.NewClient(rdb, rockscache.NewDefaultOptions()),
 	}
 }
 
+// GetWithCache 获取缓存数据
 func GetWithCache[T any](
-	c *Cache,
 	ctx context.Context,
+	c *Cache,
 	key string,
 	opt Options,
-	query func() (*T, error),
+	query func(ctx context.Context) (*T, error),
 ) (*T, error) {
 
-	// 1. 查缓存
-	if c.rdb != nil {
-		val, err := c.rdb.Get(ctx, key).Result()
-		if err == nil {
-			var wrapper Wrapper
-			if json.Unmarshal([]byte(val), &wrapper) == nil {
-
-				if !wrapper.Exist {
-					return nil, gorm.ErrRecordNotFound
-				}
-
-				var t T
-				if json.Unmarshal(wrapper.Data, &t) == nil {
-					return &t, nil
-				}
-			}
-		}
-	}
-
-	// 2. singleflight 防击穿
-	res, err, _ := c.sf.Do(key, func() (interface{}, error) {
-		data, err := query()
+	val, err := c.rc.Fetch(key, opt.getTTL(), func() (string, error) {
+		data, err := query(ctx)
 		if err != nil {
-			if errors.Is(err, gorm.ErrRecordNotFound) {
-				c.setAsync(ctx, key, Wrapper{Exist: false}, opt.NilTTL)
-				return nil, gorm.ErrRecordNotFound
+			if errors.Is(err, ErrNotFound) {
+				res, e := json.Marshal(Wrapper[T]{Data: nil})
+				if e != nil {
+					return "", e
+				}
+				return string(res), nil
 			}
-			return nil, err
+			return "", err
 		}
 
-		b, _ := json.Marshal(data)
-		c.setAsync(ctx, key, Wrapper{
-			Exist: true,
-			Data:  b,
-		}, opt.getTTL())
-
-		return data, nil
+		res, err := json.Marshal(Wrapper[T]{Data: data})
+		if err != nil {
+			return "", err
+		}
+		return string(res), nil
 	})
 
 	if err != nil {
 		return nil, err
 	}
 
-	v, ok := res.(*T)
-	if !ok {
-		return nil, errors.New("cachex: type assert fail")
+	var wrapper Wrapper[T]
+	if err := json.Unmarshal([]byte(val), &wrapper); err != nil {
+		return nil, err
 	}
 
-	return v, nil
+	if wrapper.Data == nil {
+		return nil, ErrNotFound
+	}
+
+	return wrapper.Data, nil
 }
 
-func (c *Cache) setAsync(ctx context.Context, key string, val Wrapper, ttl time.Duration) {
-	if c.rdb == nil {
-		return
+func (c *Cache) Del(keys ...string) error {
+	for _, key := range keys {
+		if err := c.rc.TagAsDeleted(key); err != nil {
+			return err
+		}
 	}
-
-	go func() {
-		b, _ := json.Marshal(val)
-
-		cctx, cancel := context.WithTimeout(context.Background(), time.Second)
-		defer cancel()
-
-		_ = c.rdb.Set(cctx, key, b, ttl).Err()
-	}()
-}
-
-func (c *Cache) Del(ctx context.Context, keys ...string) error {
-	if c.rdb == nil {
-		return nil
-	}
-	return c.rdb.Del(ctx, keys...).Err()
-}
-
-func (c *Cache) DelPattern(ctx context.Context, pattern string) error {
-	if c.rdb == nil {
-		return nil
-	}
-
-	iter := c.rdb.Scan(ctx, 0, pattern, 0).Iterator()
-	for iter.Next(ctx) {
-		_ = c.rdb.Del(ctx, iter.Val()).Err()
-	}
-
-	return iter.Err()
+	return nil
 }

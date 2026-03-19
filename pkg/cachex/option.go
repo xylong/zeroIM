@@ -7,7 +7,6 @@ import (
 
 type Options struct {
 	TTL       time.Duration
-	NilTTL    time.Duration
 	RandomTTL time.Duration // 随机抖动，防雪崩
 }
 

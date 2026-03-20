@@ -3,6 +3,7 @@ package logic
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 	"zeroIM/pkg/constants"
 
@@ -66,7 +67,7 @@ func (l *FriendPutInLogic) FriendPutIn(in *social.FriendPutInReq) (*social.Frien
 		case constants.PassHandlerResult.Uint8():
 			return nil, xerr.NewMsgErr("申请已通过")
 		}
-		return &social.FriendPutInResp{}, errors2.Wrap(xerr.NewMsgErr("request already exist"), "")
+		return &social.FriendPutInResp{}, nil
 	}
 	// 3.入库
 	err = l.svcCtx.Dao.FriendRequest.WithContext(l.ctx).Create(&models.FriendRequest{
@@ -75,10 +76,16 @@ func (l *FriendPutInLogic) FriendPutIn(in *social.FriendPutInReq) (*social.Frien
 		ReqMsg: in.ReqMsg,
 	})
 	if err != nil {
+		if strings.Contains(err.Error(), "Duplicate entry") {
+			return nil, xerr.NewMsgErr("申请已存在")
+		}
 		return nil, errors2.Wrapf(xerr.NewDBErr(), "create friendRequest err %v req %v", err, in)
 	}
 	// 4.删缓存
-	_ = l.svcCtx.Cache.Del(l.getFriendRequestCacheKey(in.ReqUid, in.UserId))
+	_ = l.svcCtx.Cache.Del(
+		l.getFriendRequestCacheKey(in.ReqUid, in.UserId),
+		l.getFriendCacheKey(in.UserId, in.ReqUid),
+	)
 
 	return &social.FriendPutInResp{}, nil
 }
@@ -141,6 +148,7 @@ func (l *FriendPutInLogic) FindByReqUidAndUserid(reqUid, userId int64) (*models.
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, cachex.ErrNotFound
 		}
+		return nil, err
 	}
 	return result, nil
 }

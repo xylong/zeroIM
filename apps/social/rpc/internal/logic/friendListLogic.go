@@ -35,7 +35,7 @@ func (l *FriendListLogic) FriendList(in *social.FriendListReq) (*social.FriendLi
 	}
 
 	var listResp []*social.Friends
-	copier.Copy(&listResp, friends)
+	_ = copier.Copy(&listResp, friends)
 
 	return &social.FriendListResp{
 		List: listResp,

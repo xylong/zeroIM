@@ -3,6 +3,7 @@ package logic
 import (
 	"context"
 	"errors"
+	"fmt"
 	errors2 "github.com/pkg/errors"
 	"gorm.io/gorm"
 	"zeroIM/apps/social/models"
@@ -61,13 +62,17 @@ func (l *FriendPutInHandleLogic) FriendPutInHandle(in *social.FriendPutInHandleR
 
 	// 3.处理入库
 	err = l.svcCtx.Dao.Transaction(func(tx *dao.Query) error {
+		// 修改请求状态
 		if _, err := tx.FriendRequest.WithContext(l.ctx).
-			Where(tx.FriendRequest.ID.Eq(int64(in.FriendReqId))).
+			Where(tx.FriendRequest.ID.Eq(in.FriendReqId)).
 			Update(tx.FriendRequest.HandleResult, in.HandleResult); err != nil {
 			return errors2.Wrapf(xerr.NewDBErr(), "update friendRequest err %v req %v", err, in)
 		}
-
-		// 如果通过。保存好友关系
+		// 删除好友申请缓存
+		_ = l.svcCtx.Cache.Del(l.ctx,
+			fmt.Sprintf("%s%d:%d", CacheFriendRequestPrefix, friendReq.ReqUID, friendReq.UserID),
+		)
+		// 如果通过，保存好友关系
 		if constants.HandlerResult(in.HandleResult) != constants.PassHandlerResult {
 			return nil
 		}

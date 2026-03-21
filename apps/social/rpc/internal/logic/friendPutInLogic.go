@@ -25,7 +25,6 @@ const (
 	CacheFriendPrefix        = "social:friend:"
 	CacheFriendRequestPrefix = "social:friend_req:"
 	CacheTTL                 = time.Minute * 30
-	CacheNilTTL              = time.Second * 30
 	CacheRandomTTL           = time.Second * 300
 )
 

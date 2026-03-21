@@ -2,79 +2,158 @@ package cachex
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
+	"time"
 
-	"github.com/dtm-labs/rockscache"
+	"github.com/bytedance/sonic"
 	"github.com/redis/go-redis/v9"
+	"github.com/zeromicro/go-zero/core/logx"
+	"golang.org/x/sync/singleflight"
 )
 
-var ErrNotFound = errors.New("not found")
+// todo 带本地缓存 + batch + 自动续期
 
-type Wrapper[T any] struct {
-	Data *T `json:"data,omitempty"`
+var (
+	ErrNilValue = errors.New("nil cache")
+)
+
+// 1 字节，ASCII NUL，无歧义,无反序列化开销
+const nilValue = "\x00"
+
+func isNilCache(val []byte) bool {
+	return len(val) == 1 && val[0] == 0
 }
 
 type Cache struct {
-	rc *rockscache.Client
+	rdb *redis.Client
+	sf  singleflight.Group
 }
 
-func NewCache(rdb redis.UniversalClient) *Cache {
-	return &Cache{
-		rc: rockscache.NewClient(rdb, rockscache.NewDefaultOptions()),
+func NewCache(rdb *redis.Client) *Cache {
+	if rdb == nil {
+		panic("redis client cannot be nil")
 	}
+	return &Cache{rdb: rdb}
 }
 
-// GetWithCache 获取缓存数据
+// GetWithCache 读取缓存
 func GetWithCache[T any](
 	ctx context.Context,
-	c *Cache,
-	key string,
+	c *Cache, key string,
 	opt Options,
-	query func(ctx context.Context) (*T, error),
+	fn func(ctx context.Context) (*T, error),
 ) (*T, error) {
+	// 1. Fast Path: 优先查询缓存，不进 SingleFlight(对热点数据避免内部互斥锁竞争)
+	val, err := c.rdb.Get(ctx, key).Bytes()
+	if err == nil {
+		if isNilCache(val) {
+			return nil, ErrNilValue
+		}
+		var res T
+		if err := sonic.Unmarshal(val, &res); err == nil {
+			return &res, nil
+		}
+		logx.WithContext(ctx).Errorf("cache decode failed, key=%s, err=%v", key, err)
+		_ = c.Del(ctx, key)
+	} else if !errors.Is(err, redis.Nil) {
+		logx.WithContext(ctx).Errorf("redis get error: %v", err)
+	}
 
-	val, err := c.rc.Fetch(key, opt.getTTL(), func() (string, error) {
-		data, err := query(ctx)
-		if err != nil {
-			if errors.Is(err, ErrNotFound) {
-				res, e := json.Marshal(Wrapper[T]{Data: nil})
-				if e != nil {
-					return "", e
-				}
-				return string(res), nil
+	// 2. Slow Path: 进 SingleFlight 防止击穿
+	v, err, _ := c.sf.Do(key, func() (any, error) {
+		// Double Check: 进锁后再查一次缓存，防止并发请求在等待 SingleFlight 时缓存已被回写
+		val, err := c.rdb.Get(ctx, key).Bytes()
+		if err == nil {
+			if isNilCache(val) {
+				return nil, ErrNilValue
 			}
-			return "", err
+			var res T
+			if err := sonic.Unmarshal(val, &res); err == nil {
+				return &res, nil
+			}
+			_ = c.Del(ctx, key)
 		}
 
-		res, err := json.Marshal(Wrapper[T]{Data: data})
+		// ===== 3. 回源 =====
+		res, err := fn(ctx)
 		if err != nil {
-			return "", err
+			return nil, err
 		}
-		return string(res), nil
+
+		// ===== 4. 处理 Nil 缓存 (防穿透) =====
+		if res == nil {
+			if opt.NilTTL <= 0 {
+				opt.NilTTL = time.Second * 30
+			}
+			ttl := randTTL(opt.NilTTL, opt.RandomTTL)
+			if ttl > 0 {
+				_ = c.rdb.Set(ctx, key, nilValue, ttl).Err()
+			}
+			return nil, ErrNilValue
+		}
+
+		// ===== 5. 处理正常缓存 =====
+		data, err := sonic.Marshal(res)
+		if err != nil {
+			return nil, err
+		}
+
+		ttl := randTTL(opt.TTL, opt.RandomTTL)
+		if ttl > 0 {
+			if err := c.rdb.Set(ctx, key, data, ttl).Err(); err != nil {
+				logx.WithContext(ctx).Errorf("cache set failed, key=%s, err=%v", key, err)
+			}
+		}
+
+		return res, nil
 	})
 
 	if err != nil {
 		return nil, err
 	}
 
-	var wrapper Wrapper[T]
-	if err := json.Unmarshal([]byte(val), &wrapper); err != nil {
-		return nil, err
+	if v == nil {
+		return nil, ErrNilValue
 	}
 
-	if wrapper.Data == nil {
-		return nil, ErrNotFound
+	res, ok := v.(*T)
+	if !ok {
+		return nil, errors.New("type assertion failed")
 	}
 
-	return wrapper.Data, nil
+	return res, nil
 }
 
-func (c *Cache) Del(keys ...string) error {
-	for _, key := range keys {
-		if err := c.rc.TagAsDeleted(key); err != nil {
-			return err
-		}
+func Set[T any](ctx context.Context, c *Cache, key string, val T, ttl time.Duration) error {
+	data, err := sonic.Marshal(val)
+	if err != nil {
+		return err
 	}
-	return nil
+	return c.rdb.Set(ctx, key, data, ttl).Err()
+}
+
+// ================= Hash 示例 =================
+
+func HSet[T any](ctx context.Context, c *Cache, key, field string, val T) error {
+	data, err := sonic.Marshal(val)
+	if err != nil {
+		return err
+	}
+	return c.rdb.HSet(ctx, key, field, data).Err()
+}
+
+func HGet[T any](ctx context.Context, c *Cache, key, field string) (*T, error) {
+	val, err := c.rdb.HGet(ctx, key, field).Bytes()
+	if err != nil {
+		return nil, err
+	}
+	var res T
+	if err := sonic.Unmarshal(val, &res); err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
+func (c *Cache) Del(ctx context.Context, keys ...string) error {
+	return c.rdb.Del(ctx, keys...).Err()
 }

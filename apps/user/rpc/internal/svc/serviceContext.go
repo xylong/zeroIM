@@ -12,6 +12,7 @@ import (
 	"time"
 	"zeroIM/apps/user/rpc/internal/config"
 	"zeroIM/apps/user/rpc/internal/dao"
+	"zeroIM/pkg/cachex"
 )
 
 type ServiceContext struct {
@@ -19,6 +20,7 @@ type ServiceContext struct {
 	DB     *gorm.DB
 	Dao    *dao.Query
 	Rdb    *redis.Client
+	Cache  *cachex.Cache
 
 	UserInfoSF syncx.SingleFlight // 全局共享
 }
@@ -59,6 +61,7 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		DB:         db,
 		Dao:        dao.Use(db),
 		Rdb:        rdb,
+		Cache:      cachex.NewCache(rdb),
 		UserInfoSF: syncx.NewSingleFlight(),
 	}
 }

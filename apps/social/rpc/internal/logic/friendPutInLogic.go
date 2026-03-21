@@ -22,11 +22,11 @@ import (
 )
 
 const (
-	cacheFriendPrefix        = "social:friend:"
-	cacheFriendRequestPrefix = "social:friend_req:"
-	cacheTTL                 = time.Minute * 30
-	cacheNilTTL              = time.Second * 30
-	cacheRandomTTL           = time.Second * 300
+	CacheFriendPrefix        = "social:friend:"
+	CacheFriendRequestPrefix = "social:friend_req:"
+	CacheTTL                 = time.Minute * 30
+	CacheNilTTL              = time.Second * 30
+	CacheRandomTTL           = time.Second * 300
 )
 
 type FriendPutInLogic struct {
@@ -44,18 +44,12 @@ func NewFriendPutInLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Frien
 }
 
 func (l *FriendPutInLogic) FriendPutIn(in *social.FriendPutInReq) (*social.FriendPutInResp, error) {
-	// 1.是否已是好友
-	friends, err := l.getFriendWithCache(in.UserId, in.ReqUid)
-	if err != nil && !errors.Is(err, cachex.ErrNotFound) {
-		return nil, errors2.Wrapf(xerr.NewDBErr(), "find friend err %v req %v", err, in)
+	if in.ReqUid == in.UserId {
+		return nil, xerr.NewMsgErr("不能加自己为好友")
 	}
-	if friends != nil {
-		return nil, xerr.NewMsgErr("已是好友")
-	}
-
-	// 2.是否已有申请
+	// 1.是否已有申请
 	request, err := l.getFriendRequestWithCache(in.ReqUid, in.UserId)
-	if err != nil && !errors.Is(err, cachex.ErrNotFound) {
+	if err != nil && !errors.Is(err, cachex.ErrNilValue) {
 		return nil, errors2.Wrapf(xerr.NewDBErr(), "find friend request err %v req %v", err, in)
 	}
 	if request != nil {
@@ -69,6 +63,16 @@ func (l *FriendPutInLogic) FriendPutIn(in *social.FriendPutInReq) (*social.Frien
 		}
 		return &social.FriendPutInResp{}, nil
 	}
+
+	// 2.是否已是好友
+	friends, err := l.getFriendWithCache(in.UserId, in.ReqUid)
+	if err != nil && !errors.Is(err, cachex.ErrNilValue) {
+		return nil, errors2.Wrapf(xerr.NewDBErr(), "find friend err %v req %v", err, in)
+	}
+	if friends != nil {
+		return nil, xerr.NewMsgErr("已是好友")
+	}
+
 	// 3.入库
 	err = l.svcCtx.Dao.FriendRequest.WithContext(l.ctx).Create(&models.FriendRequest{
 		UserID: in.UserId,
@@ -82,9 +86,9 @@ func (l *FriendPutInLogic) FriendPutIn(in *social.FriendPutInReq) (*social.Frien
 		return nil, errors2.Wrapf(xerr.NewDBErr(), "create friendRequest err %v req %v", err, in)
 	}
 	// 4.删缓存
-	_ = l.svcCtx.Cache.Del(
+	_ = l.svcCtx.Cache.Del(l.ctx,
 		l.getFriendRequestCacheKey(in.ReqUid, in.UserId),
-		l.getFriendCacheKey(in.UserId, in.ReqUid),
+		l.getFriendCacheKey(in.ReqUid, in.UserId),
 	)
 
 	return &social.FriendPutInResp{}, nil
@@ -98,8 +102,8 @@ func (l *FriendPutInLogic) getFriendWithCache(uid, fid int64) (*models.Friend, e
 	}
 
 	return cachex.GetWithCache(l.ctx, l.svcCtx.Cache, key, cachex.Options{
-		TTL:       cacheTTL,
-		RandomTTL: cacheRandomTTL,
+		TTL:       CacheTTL,
+		RandomTTL: CacheRandomTTL,
 	}, query)
 }
 
@@ -111,17 +115,17 @@ func (l *FriendPutInLogic) getFriendRequestWithCache(reqUid, userId int64) (*mod
 	}
 
 	return cachex.GetWithCache(l.ctx, l.svcCtx.Cache, key, cachex.Options{
-		TTL:       cacheTTL,
-		RandomTTL: cacheRandomTTL,
+		TTL:       CacheTTL,
+		RandomTTL: CacheRandomTTL,
 	}, query)
 }
 
 func (l *FriendPutInLogic) getFriendCacheKey(uid, fid int64) string {
-	return fmt.Sprintf("%s%d:%d", cacheFriendPrefix, uid, fid)
+	return fmt.Sprintf("%s%d:%d", CacheFriendPrefix, uid, fid)
 }
 
 func (l *FriendPutInLogic) getFriendRequestCacheKey(reqUid, userId int64) string {
-	return fmt.Sprintf("%s%d:%d", cacheFriendRequestPrefix, reqUid, userId)
+	return fmt.Sprintf("%s%d:%d", CacheFriendRequestPrefix, reqUid, userId)
 }
 
 func (l *FriendPutInLogic) FindByUidAndFid(uid, fid int64) (*models.Friend, error) {
@@ -131,7 +135,7 @@ func (l *FriendPutInLogic) FindByUidAndFid(uid, fid int64) (*models.Friend, erro
 		First()
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, cachex.ErrNotFound
+			return nil, cachex.ErrNilValue
 		}
 		return nil, err
 	}
@@ -146,7 +150,7 @@ func (l *FriendPutInLogic) FindByReqUidAndUserid(reqUid, userId int64) (*models.
 		First()
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, cachex.ErrNotFound
+			return nil, cachex.ErrNilValue
 		}
 		return nil, err
 	}

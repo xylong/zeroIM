@@ -5,6 +5,11 @@ var codeText = map[int]string{
 	RequestParamError: "参数不正确",
 	TokenExpireError:  "token失效，请重新登陆",
 	DbError:           "数据库繁忙,请稍后再试",
+
+	UserPhoneIsRegister:  "手机号已注册",
+	UserPhoneNotRegister: "手机号未注册",
+	UserPasswordError:    "密码错误",
+	UserNotExist:         "用户不存在",
 }
 
 func ErrMsg(errCode int) string {

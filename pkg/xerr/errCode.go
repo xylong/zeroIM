@@ -5,6 +5,12 @@ const (
 	RequestParamError = 100002
 	TokenExpireError  = 100003
 	DbError           = 100004
+
+	// user 业务错误码 (2xxxxx)
+	UserPhoneIsRegister  = 200001
+	UserPhoneNotRegister = 200002
+	UserPasswordError    = 200003
+	UserNotExist         = 200004
 )
 
 // IsBusinessError 是否为业务错误码

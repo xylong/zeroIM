@@ -9,6 +9,7 @@ type Options struct {
 	TTL       time.Duration
 	NilTTL    time.Duration // 防穿透
 	RandomTTL time.Duration // 随机抖动，防雪崩
+	CacheNil  bool          // 是否缓存nil
 }
 
 func randTTL(base, jitter time.Duration) time.Duration {

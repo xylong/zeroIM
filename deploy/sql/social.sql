@@ -41,12 +41,12 @@ CREATE TABLE `groups` (
                           `status` tinyint(4) NOT NULL DEFAULT '1' COMMENT '1开启 0关闭',
                           `creator_uid` int(11) NOT NULL DEFAULT '0' COMMENT '创建人uid',
                           `group_type` tinyint(4) NOT NULL DEFAULT '1' COMMENT '1=普通群 2=企业群 3=聊天室',
-                          `is_verify` tinyint(1) NOT NULL COMMENT '入群验证：1开启 2关闭',
+                          `is_verify` tinyint(1) NOT NULL COMMENT '入群验证：0关闭 1开启',
                           `notification` text CHARACTER SET utf8 NOT NULL COMMENT '群公告',
                           `notification_uid` int(11) NOT NULL DEFAULT '0' COMMENT '最后设置公告的人uid（可选）',
                           `member_count` mediumint(6) NOT NULL DEFAULT '1' COMMENT '群人数',
-                          `created_at` timestamp NOT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '创建时间',
-                          `updated_at` timestamp NOT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+                          created_at timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+                              updated_at timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
                           `deleted_at` timestamp NULL DEFAULT NULL COMMENT '删除时间',
                           PRIMARY KEY (`id`) USING BTREE,
                           KEY `idx_creator_uid` (`creator_uid`) USING BTREE
@@ -60,16 +60,16 @@ CREATE TABLE `group_requests` (
                                   `join_source` tinyint(1) unsigned NOT NULL DEFAULT '2' COMMENT '1=被邀请入群 2=主动申请',
                                   `inviter_user_id` int(10) unsigned NOT NULL DEFAULT '0' COMMENT '邀请人uid（join_source=1时有效）',
                                   `handle_user_id` int(10) unsigned NOT NULL DEFAULT '0' COMMENT '处理人uid（群管理员/群主）',
-                                  `handle_result` tinyint(1) unsigned NOT NULL DEFAULT '1' COMMENT '1=待处理 2=通过 3=拒绝 4=取消',
+                                  `handle_result` tinyint(1) unsigned NOT NULL DEFAULT '0' COMMENT '0=待处理 1=通过 2=拒绝 3=取消',
                                   `handled_at` timestamp NULL DEFAULT NULL COMMENT '处理时间',
                                   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
                                   `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
                                   `deleted_at` timestamp NULL DEFAULT NULL COMMENT '删除时间',
                                   PRIMARY KEY (`id`),
-                                  UNIQUE KEY `uk_group_req` (`group_id`,`req_id`),
                                   KEY `idx_group_pending` (`group_id`,`handle_result`,`created_at`),
-                                  KEY `idx_requester_status` (`req_id`,`handle_result`,`created_at`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='入群申请/邀请记录表';
+                                  KEY `idx_requester_status` (`req_id`,`handle_result`,`created_at`),
+                                  KEY `idx_group_req` (`req_id`,`group_id`) USING BTREE
+) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='入群申请/邀请记录表'
 
 CREATE TABLE `group_members` (
                                  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,

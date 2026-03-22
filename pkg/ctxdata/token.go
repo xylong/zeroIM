@@ -7,7 +7,7 @@ import (
 const Identify = "zeroIMChat"
 
 // GetJwtToken 获取jwt token
-func GetJwtToken(secretKey string, iat, seconds int64, uid string) (string, error) {
+func GetJwtToken(secretKey string, iat, seconds int64, uid int64) (string, error) {
 	claims := make(jwt.MapClaims)
 	claims["exp"] = iat + seconds
 	claims["iat"] = iat

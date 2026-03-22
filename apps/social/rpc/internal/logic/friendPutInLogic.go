@@ -48,16 +48,16 @@ func (l *FriendPutInLogic) FriendPutIn(in *social.FriendPutInReq) (*social.Frien
 	}
 	// 1.是否已有申请
 	request, err := l.getFriendRequestWithCache(in.ReqUid, in.UserId)
-	if err != nil && !errors.Is(err, cachex.ErrNilValue) {
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, errors2.Wrapf(xerr.NewDBErr(), "find friend request err %v req %v", err, in)
 	}
 	if request != nil {
 		switch request.HandleResult {
-		case constants.NoHandlerResult.Uint8():
+		case constants.FriendHandlerPending.Uint8():
 			return nil, xerr.NewMsgErr("申请已存在")
-		case constants.RejectHandlerResult.Uint8():
+		case constants.FriendHandleReject.Uint8():
 			return nil, xerr.NewMsgErr("申请已拒绝")
-		case constants.PassHandlerResult.Uint8():
+		case constants.FriendHandlePass.Uint8():
 			return nil, xerr.NewMsgErr("申请已通过")
 		}
 		return &social.FriendPutInResp{}, nil
@@ -65,7 +65,7 @@ func (l *FriendPutInLogic) FriendPutIn(in *social.FriendPutInReq) (*social.Frien
 
 	// 2.是否已是好友
 	friends, err := l.getFriendWithCache(in.UserId, in.ReqUid)
-	if err != nil && !errors.Is(err, cachex.ErrNilValue) {
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, errors2.Wrapf(xerr.NewDBErr(), "find friend err %v req %v", err, in)
 	}
 	if friends != nil {
@@ -134,7 +134,7 @@ func (l *FriendPutInLogic) FindByUidAndFid(uid, fid int64) (*models.Friend, erro
 		First()
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, cachex.ErrNilValue
+			return nil, nil
 		}
 		return nil, err
 	}
@@ -149,7 +149,7 @@ func (l *FriendPutInLogic) FindByReqUidAndUserid(reqUid, userId int64) (*models.
 		First()
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, cachex.ErrNilValue
+			return nil, nil
 		}
 		return nil, err
 	}

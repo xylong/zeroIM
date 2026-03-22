@@ -51,12 +51,12 @@ func (l *FriendPutInHandleLogic) FriendPutInHandle(in *social.FriendPutInHandleR
 	}
 
 	// 2.验证处理状态
-	switch constants.HandlerResult(friendReq.HandleResult) {
-	case constants.PassHandlerResult:
+	switch constants.FriendHandlerResult(friendReq.HandleResult) {
+	case constants.FriendHandlePass:
 		return nil, errors2.WithStack(ErrFriendReqBeforePass)
-	case constants.RejectHandlerResult:
+	case constants.FriendHandleReject:
 		return nil, errors2.WithStack(ErrFriendReqBeforeRefuse)
-	case constants.CancelHandlerResult:
+	case constants.FriendHandleCancel:
 		return nil, errors2.WithStack(ErrFriendReqCancelRefuse)
 	}
 
@@ -73,7 +73,7 @@ func (l *FriendPutInHandleLogic) FriendPutInHandle(in *social.FriendPutInHandleR
 			fmt.Sprintf("%s%d:%d", CacheFriendRequestPrefix, friendReq.ReqUID, friendReq.UserID),
 		)
 		// 如果通过，保存好友关系
-		if constants.HandlerResult(in.HandleResult) != constants.PassHandlerResult {
+		if constants.FriendHandlerResult(in.HandleResult) != constants.FriendHandlePass {
 			return nil
 		}
 

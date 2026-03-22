@@ -1,12 +1,10 @@
 package main
 
 import (
+	"gorm.io/gen"
 	"path/filepath"
 	"runtime"
-
 	"zeroIM/apps/user/models"
-
-	"gorm.io/gen"
 )
 
 func main() {
@@ -14,7 +12,7 @@ func main() {
 	_, filename, _, _ := runtime.Caller(0)
 	root := filepath.Dir(filepath.Dir(filepath.Dir(filename))) // zeroIM/
 
-	// 指定输出目录：apps/user/rpc/internal/dao
+	// 指定输出目录：apps/social/rpc/internal/dao
 	outputDir := filepath.Join(root, "apps", "user", "rpc", "internal", "dao")
 
 	// 初始化生成器

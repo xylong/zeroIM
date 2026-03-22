@@ -13,15 +13,14 @@ import (
 
 // todo 带本地缓存 + batch + 自动续期
 
-var (
-	ErrNilValue = errors.New("nil cache")
+// 1 字节，ASCII NUL，无歧义,无反序列化开销
+const (
+	nilValue          = "\x00"
+	nilValueByte byte = 0
 )
 
-// 1 字节，ASCII NUL，无歧义,无反序列化开销
-const nilValue = "\x00"
-
 func isNilCache(val []byte) bool {
-	return len(val) == 1 && val[0] == 0
+	return len(val) == 1 && val[0] == nilValueByte
 }
 
 type Cache struct {
@@ -47,7 +46,7 @@ func GetWithCache[T any](
 	val, err := c.rdb.Get(ctx, key).Bytes()
 	if err == nil {
 		if isNilCache(val) {
-			return nil, ErrNilValue
+			return nil, nil
 		}
 		var res T
 		if err := sonic.Unmarshal(val, &res); err == nil {
@@ -65,7 +64,7 @@ func GetWithCache[T any](
 		val, err := c.rdb.Get(ctx, key).Bytes()
 		if err == nil {
 			if isNilCache(val) {
-				return nil, ErrNilValue
+				return nil, nil
 			}
 			var res T
 			if err := sonic.Unmarshal(val, &res); err == nil {
@@ -82,14 +81,23 @@ func GetWithCache[T any](
 
 		// ===== 4. 处理 Nil 缓存 (防穿透) =====
 		if res == nil {
-			if opt.NilTTL <= 0 {
-				opt.NilTTL = time.Second * 30
+			// 是否允许缓存空值
+			if !opt.CacheNil {
+				return nil, nil
 			}
-			ttl := randTTL(opt.NilTTL, opt.RandomTTL)
+			nilTTL := opt.NilTTL
+			if nilTTL <= 0 {
+				nilTTL = time.Second * 10 // ✅ 防穿透兜底
+			}
+
+			ttl := randTTL(nilTTL, opt.RandomTTL)
 			if ttl > 0 {
-				_ = c.rdb.Set(ctx, key, nilValue, ttl).Err()
+				if err := c.rdb.Set(ctx, key, nilValue, ttl).Err(); err != nil {
+					logx.WithContext(ctx).Errorf("set nil cache failed, key=%s, err=%v", key, err)
+				}
 			}
-			return nil, ErrNilValue
+
+			return nil, nil
 		}
 
 		// ===== 5. 处理正常缓存 =====
@@ -113,7 +121,7 @@ func GetWithCache[T any](
 	}
 
 	if v == nil {
-		return nil, ErrNilValue
+		return nil, nil
 	}
 
 	res, ok := v.(*T)

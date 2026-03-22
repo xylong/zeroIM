@@ -56,7 +56,7 @@ func (l *GroupPutInHandleLogic) GroupPutInHandle(in *social.GroupPutInHandleReq)
 	_, err = l.svcCtx.Dao.GroupMember.WithContext(l.ctx).
 		Where(l.svcCtx.Dao.GroupMember.GroupID.Eq(in.GroupId)).
 		Where(l.svcCtx.Dao.GroupMember.UserID.Eq(in.HandleUid)).
-		Where(l.svcCtx.Dao.GroupMember.RoleLevel.In(constants.CreatorGroupRoleLevel.Uint8(), constants.ManagerGroupRoleLevel.Uint8())).
+		Where(l.svcCtx.Dao.GroupMember.RoleLevel.In(constants.GroupOwner.Uint8(), constants.GroupAdmin.Uint8())).
 		First()
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -65,10 +65,10 @@ func (l *GroupPutInHandleLogic) GroupPutInHandle(in *social.GroupPutInHandleReq)
 		return nil, errors2.Wrapf(xerr.NewDBErr(), "find group member err %v groupReqId=%v", err, in.GroupReqId)
 	}
 
-	switch constants.HandlerResult(req.HandleResult) {
-	case constants.PassHandlerResult:
+	switch constants.GroupHandlerResult(req.HandleResult) {
+	case constants.GroupHandlePass:
 		return nil, errors2.WithStack(ErrGroupReqBeforePass)
-	case constants.RejectHandlerResult:
+	case constants.GroupHandleReject:
 		return nil, errors2.WithStack(ErrGroupReqBeforeRefuse)
 	}
 	req.HandleResult = uint8(in.HandleResult)
@@ -84,14 +84,14 @@ func (l *GroupPutInHandleLogic) GroupPutInHandle(in *social.GroupPutInHandleReq)
 			return errors2.Wrapf(xerr.NewDBErr(), "update group req err %v groupReqId=%v", err, in.GroupReqId)
 		}
 
-		if constants.HandlerResult(in.HandleResult) != constants.PassHandlerResult {
+		if constants.GroupHandlerResult(in.HandleResult) != constants.GroupHandlePass {
 			return nil
 		}
 
 		if err := tx.GroupMember.WithContext(l.ctx).Create(&models.GroupMember{
 			GroupID:         req.GroupID,
 			UserID:          req.ReqID,
-			RoleLevel:       constants.AtLargeGroupRoleLevel.Uint8(),
+			RoleLevel:       constants.GroupMember.Uint8(),
 			LastOperatorUID: in.HandleUid,
 		}); err != nil {
 			return errors2.Wrapf(xerr.NewDBErr(), "create group member err %v groupReqId=%v", err, in.GroupReqId)

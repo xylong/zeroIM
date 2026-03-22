@@ -13,7 +13,7 @@ type Group struct {
 	Status          int8           `gorm:"column:status;type:tinyint;not null;default:1;comment:1开启 0关闭" json:"status"`
 	CreatorUID      int64          `gorm:"column:creator_uid;not null;default:0;index:idx_creator_uid;comment:创建人uid" json:"creator_uid"`
 	GroupType       int8           `gorm:"column:group_type;type:tinyint;not null;default:1;comment:1=普通群 2=企业群 3=聊天室" json:"group_type"`
-	IsVerify        int8           `gorm:"column:is_verify;type:tinyint;not null;comment:入群验证：1开启 2关闭" json:"is_verify"`
+	IsVerify        int8           `gorm:"column:is_verify;type:tinyint;not null;comment:入群验证：0关闭 1开启" json:"is_verify"`
 	Notification    string         `gorm:"column:notification;type:text;not null;comment:群公告" json:"notification"`
 	NotificationUID int64          `gorm:"column:notification_uid;not null;default:0;comment:最后设置公告的人uid" json:"notification_uid"`
 	MemberCount     int            `gorm:"column:member_count;type:mediumint;not null;default:1;comment:群人数" json:"member_count"`
